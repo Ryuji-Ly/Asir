@@ -4,8 +4,7 @@ const {
     Interaction,
     EmbedBuilder,
 } = require("discord.js");
-const reportChannel = "1161029383709012178";
-
+const guildConfiguration = require("../../models/guildConfiguration");
 module.exports = {
     data: new ContextMenuCommandBuilder()
         .setName("Report Message")
@@ -19,6 +18,10 @@ module.exports = {
         const message = interaction.channel.messages.fetch(interaction.targetId);
         if ((await message).author.bot)
             return interaction.reply({ content: "This is a bot message...", ephemeral: true });
+        const config = guildConfiguration.findOne({ guildId: interaction.guild.id });
+        const channel = interaction.guild.channels.cache.find(
+            (channel) => channel.id === config.reportChannelId
+        );
         const embed = new EmbedBuilder()
             .setAuthor({ name: interaction.user.username, iconURL: interaction.user.avatarURL() })
             .setTitle("A message has been reported")
@@ -31,9 +34,6 @@ module.exports = {
                     interaction.channel.id
                 }/${interaction.targetId}`
             );
-        const channel = interaction.guild.channels.cache.find(
-            (channel) => channel.id === reportChannel
-        );
         await channel.send({ embeds: [embed] });
         interaction.reply({
             content: `You have reported the message`,
