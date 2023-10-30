@@ -1,6 +1,11 @@
 const mongoose = require("mongoose");
+const { randomUUID } = require("crypto");
 
 const profileSchema = new mongoose.Schema({
+    dataId: {
+        type: String,
+        default: randomUUID,
+    },
     userId: {
         type: String,
         require: true,
@@ -41,8 +46,12 @@ const profileSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    commandCounter: {
+        type: Array,
+        default: [],
+    },
 });
 
-const model = mongoose.model("users", profileSchema);
+const model = mongoose.model("userdatabase", profileSchema);
 
 module.exports = model;

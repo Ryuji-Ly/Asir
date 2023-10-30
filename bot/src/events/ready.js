@@ -1,8 +1,11 @@
+var colors = require("colors");
+colors.enable();
+
 module.exports = {
     name: "ready",
     once: true,
     async execute(client) {
-        console.log(`✅ Ready! ${client.user.tag} is online!`);
+        console.log(`✅ Ready! ${client.user.tag} is online!`.green);
 
         async function pickPresence() {
             const option = Math.floor(Math.random() * statusArray.length);

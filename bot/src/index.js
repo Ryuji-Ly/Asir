@@ -19,6 +19,8 @@ const client = new Client({
     ],
 });
 const mongoose = require("mongoose");
+var colors = require("colors");
+colors.enable();
 
 client.commands = new Collection();
 
@@ -34,7 +36,7 @@ mongoose
         useUnifiedTopology: true,
     })
     .then(() => {
-        console.log("✅ Connected to the database!");
+        console.log("✅ Connected to the database!".green);
     })
     .catch((err) => {
         console.log(err);

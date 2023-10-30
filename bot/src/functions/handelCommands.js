@@ -1,6 +1,8 @@
 const { REST } = require("@discordjs/rest");
 const { Routes } = require("discord-api-types/v9");
 const fs = require("fs");
+var colors = require("colors");
+colors.enable();
 
 const clientId = "1167152628241813585"; //to be changed
 const guildId = "1155159073583550535"; //to be changed
@@ -25,13 +27,13 @@ module.exports = (client) => {
 
         (async () => {
             try {
-                console.log("Started refreshing application (/) commands.");
+                console.log("Started refreshing application (/) commands.".yellow);
 
                 await rest.put(Routes.applicationCommands(clientId), {
                     body: client.commandArray,
                 });
 
-                console.log("Successfully reloaded application (/) commands.");
+                console.log("Successfully reloaded application (/) commands.".yellow);
             } catch (error) {
                 console.error(error);
             }
