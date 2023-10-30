@@ -1,10 +1,17 @@
-const { SlashCommandBuilder, Interaction, EmbedBuilder, ChannelType } = require("discord.js");
+const {
+    SlashCommandBuilder,
+    Interaction,
+    EmbedBuilder,
+    ChannelType,
+    PermissionFlagsBits,
+} = require("discord.js");
 const guildConfiguration = require("../../models/guildConfiguration");
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("config")
         .setDescription("All configure settings")
+        .setDMPermission(false)
         .addSubcommand((subcommand) =>
             subcommand
                 .setName("suggestions-add")

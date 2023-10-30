@@ -36,7 +36,7 @@ mongoose
         useUnifiedTopology: true,
     })
     .then(() => {
-        console.log("✅ Connected to the database!".green);
+        console.log("[BOT] Connected to the database!".green);
     })
     .catch((err) => {
         console.log(err);

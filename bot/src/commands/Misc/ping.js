@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, Interaction, EmbedBuilder } = require("discord.js");
 
 module.exports = {
-    data: new SlashCommandBuilder().setName("ping").setDescription("Replies with pong!"),
+    data: new SlashCommandBuilder().setName("ping").setDescription("Replies with Pong!"),
     /**
      *
      *

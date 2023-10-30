@@ -8,6 +8,7 @@ const guildConfiguration = require("../../models/guildConfiguration");
 module.exports = {
     data: new ContextMenuCommandBuilder()
         .setName("Report Message")
+        .setDMPermission(false)
         .setType(ApplicationCommandType.Message),
     /**
      *

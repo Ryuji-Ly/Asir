@@ -1,11 +1,26 @@
 const { Interaction } = require("discord.js");
 const ProfileModel = require("../models/profileSchema");
+const blacklist = ["429579283111870464", "943927822311911454"];
+var colors = require("colors");
+colors.enable();
 
 module.exports = {
     name: "interactionCreate",
     async execute(interaction, client) {
         //execute all commands
         if (!interaction.isCommand()) return;
+        if (blacklist.includes(interaction.user.id))
+            return interaction.reply({
+                content: "You are blacklisted from all commands",
+                ephemeral: true,
+            });
+        if (interaction.user.id !== "348902272534839296") {
+            return interaction.reply({
+                content:
+                    "This bot is currently under development, you do not have access to commands yet",
+                ephemeral,
+            });
+        }
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
         //check if user data exists
@@ -26,7 +41,7 @@ module.exports = {
             try {
                 subname = interaction.options.getSubcommand();
             } catch (error) {
-                console.log("No subcommand for command counter, no problems here");
+                process.stdout.write("\r\x1b[K");
             }
             let value = interaction.commandName;
             if (subname !== "") value = `${interaction.commandName} ${subname}`;
@@ -66,13 +81,13 @@ module.exports = {
                 }
             );
         } catch (error) {
-            console.log("error with updating command counter");
+            console.log("[INTERACTION CREATE] error with updating command counter".red);
         }
         //execute the command
         try {
             await command.execute(interaction, client);
         } catch (error) {
-            console.log(error);
+            console.log(`[INTERACTION CREATE] ${error}`.red);
             await interaction.reply({
                 content: "There was an error while executing this command!",
                 ephemeral: true,

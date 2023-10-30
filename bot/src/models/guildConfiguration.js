@@ -9,6 +9,10 @@ const guildConfigurationSchema = new Schema({
         type: String,
         default: "",
     },
+    welcomeChannelId: {
+        type: String,
+        default: "",
+    },
     suggestionChannelIds: {
         type: [String],
         default: [],
@@ -132,6 +136,10 @@ const guildConfigurationSchema = new Schema({
     slotsTotal: {
         type: Number,
         default: 0,
+    },
+    xpBaseRequirement: {
+        type: Number,
+        default: 100,
     },
 });
 

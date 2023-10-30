@@ -2,7 +2,10 @@ const { SlashCommandBuilder, Interaction, EmbedBuilder } = require("discord.js")
 const { Flood } = require("discord-gamecord");
 
 module.exports = {
-    data: new SlashCommandBuilder().setName("flood").setDescription("Play a game of flood"),
+    data: new SlashCommandBuilder()
+        .setName("flood")
+        .setDescription("Play a game of flood")
+        .setDMPermission(false),
     /**
      *
      *

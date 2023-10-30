@@ -1,5 +1,4 @@
 const { Schema, model } = require("mongoose");
-const { groupCost } = require("../globalValues.json");
 
 const groupSchema = new Schema({
     guildId: {
@@ -48,7 +47,7 @@ const groupSchema = new Schema({
     },
     groupTotalCosts: {
         type: Number,
-        default: groupCost,
+        default: 50000,
     },
 });
 

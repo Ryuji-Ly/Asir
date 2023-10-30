@@ -1,29 +1,21 @@
 var colors = require("colors");
 colors.enable();
+const { ActivityType } = require("discord.js");
 
 module.exports = {
     name: "ready",
     once: true,
     async execute(client) {
-        console.log(`✅ Ready! ${client.user.tag} is online!`.green);
-
-        async function pickPresence() {
-            const option = Math.floor(Math.random() * statusArray.length);
-
-            try {
-                await client.user.setPresence({
-                    activities: [
-                        {
-                            name: statusArray[option].content,
-                            type: statusArray[option].type,
-                        },
-                    ],
-
-                    status: statusArray[option].status,
-                });
-            } catch (error) {
-                console.error(error);
-            }
-        }
+        const status = await client.user.setPresence({
+            status: "idle",
+            activities: [
+                {
+                    type: ActivityType.Custom,
+                    name: "customstatus",
+                    state: "Being developed...",
+                },
+            ],
+        });
+        console.log(`[BOT] Ready! ${client.user.tag} is online!`.green);
     },
 };
