@@ -1,11 +1,18 @@
 const { Interaction } = require("discord.js");
 const ProfileModel = require("../models/profileSchema");
-const blacklist = ["429579283111870464", "943927822311911454"];
+const blacklist = ["943927822311911454"];
+const whitelist = ["348902272534839296", "429579283111870464"];
 var colors = require("colors");
 colors.enable();
 
 module.exports = {
     name: "interactionCreate",
+    /**
+     *
+     * @param {Interaction} interaction
+     * @param {*} client
+     * @returns
+     */
     async execute(interaction, client) {
         //execute all commands
         if (!interaction.isCommand()) return;
@@ -14,7 +21,7 @@ module.exports = {
                 content: "You are blacklisted from all commands",
                 ephemeral: true,
             });
-        if (interaction.user.id !== "348902272534839296") {
+        if (!whitelist.includes(interaction.user.id)) {
             return interaction.reply({
                 content:
                     "This bot is currently under development, you do not have access to commands yet",

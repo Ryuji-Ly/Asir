@@ -16,6 +16,10 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildPresences,
         GatewayIntentBits.DirectMessageReactions,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildEmojisAndStickers,
+        GatewayIntentBits.GuildInvites,
+        GatewayIntentBits.GuildVoiceStates,
     ],
 });
 const mongoose = require("mongoose");
