@@ -1,7 +1,7 @@
 const { Interaction } = require("discord.js");
 const ProfileModel = require("../models/profileSchema");
-const blacklist = ["943927822311911454"];
-const whitelist = ["348902272534839296", "429579283111870464"];
+const guildConfiguration = require("../models/guildConfiguration");
+const whitelist = ["348902272534839296"];
 var colors = require("colors");
 colors.enable();
 
@@ -15,8 +15,9 @@ module.exports = {
      */
     async execute(interaction, client) {
         //execute all commands
+        const data = await guildConfiguration.findOne({ guildId: interaction.guild.id });
         if (!interaction.isCommand()) return;
-        if (blacklist.includes(interaction.user.id))
+        if (data.blacklist.includes(interaction.user.id))
             return interaction.reply({
                 content: "You are blacklisted from all commands",
                 ephemeral: true,
@@ -25,7 +26,7 @@ module.exports = {
             return interaction.reply({
                 content:
                     "This bot is currently under development, you do not have access to commands yet",
-                ephemeral,
+                ephemeral: true,
             });
         }
         const command = client.commands.get(interaction.commandName);

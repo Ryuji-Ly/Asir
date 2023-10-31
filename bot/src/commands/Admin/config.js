@@ -14,8 +14,8 @@ module.exports = {
         .setDMPermission(false)
         .addSubcommand((subcommand) =>
             subcommand
-                .setName("set-welcome-channel")
-                .setDescription("Add a channel as suggerstions channel")
+                .setName("welcome-channel-set")
+                .setDescription("Set your welcome channel")
                 .addChannelOption((option) =>
                     option
                         .setName("channel")
@@ -23,6 +23,11 @@ module.exports = {
                         .addChannelTypes(ChannelType.GuildText)
                         .setRequired(true)
                 )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("welcome-channel-remove")
+                .setDescription("Removes your welcome channel")
         )
         .addSubcommand((subcommand) =>
             subcommand
@@ -57,7 +62,7 @@ module.exports = {
         const { options, guild, user } = interaction;
         const subcommand = options.getSubcommand();
         const data = await guildConfiguration.findOne({ guildId: guild.id });
-        if (subcommand === "set-welcome-channel") {
+        if (subcommand === "welcome-channel-set") {
             const channel = options.getChannel("channel");
             if (data.welcomeChannelId === "") {
                 data.welcomeChannelId = channel.id;
@@ -75,6 +80,13 @@ module.exports = {
                     `You have replaced the previous welcome channel <#${previousChannel}> with ${channel}.`
                 );
             }
+        }
+        if (subcommand === "welcome-channel-remove") {
+            if (data.welcomeChannelId === "")
+                return interaction.reply(`You do not have a welcome channel setup.`);
+            data.welcomeChannelId = "";
+            await data.save();
+            return interaction.reply(`You have removed your welcome channel.`);
         }
         if (subcommand === "suggestions-add") {
             const channel = options.getChannel("channel");

@@ -141,6 +141,10 @@ const guildConfigurationSchema = new Schema({
         type: Number,
         default: 100,
     },
+    blacklist: {
+        type: Array,
+        default: [],
+    },
 });
 
 module.exports = model("guildConfiguration", guildConfigurationSchema);
