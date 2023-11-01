@@ -50,6 +50,10 @@ const profileSchema = new mongoose.Schema({
         type: Array,
         default: [],
     },
+    warnings: {
+        type: Number,
+        default: 0,
+    },
 });
 
 const model = mongoose.model("userdatabase", profileSchema);
