@@ -3,4 +3,10 @@ body {
   background-color: #292929;
   color: #fff;
   font-family:'DM Sans';
+  height: 100%;
+}
+
+html,
+#root {
+  height: 100%;
 }

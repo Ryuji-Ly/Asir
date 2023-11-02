@@ -8,6 +8,7 @@ import { LogPage } from "./pages/configPages/logs";
 import { LevelPage } from "./pages/configPages/levels";
 import { EconomyPage } from "./pages/configPages/economy";
 import { GuildContext } from "./utils/contexts/guildContext";
+import { AppBar } from "./components/appbar";
 
 function App() {
     const [guildId, setGuildId] = useState("");
@@ -15,14 +16,17 @@ function App() {
     return (
         <GuildContext.Provider value={{ guildId, updateGuildId }}>
             <Routes>
+                <Route path="/dashboard/*" element={<AppBar />} />
+            </Routes>
+            <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/menu" element={<MenuPage />} />
                 {/* <Route path="/dashboard" element={<HomePage />} /> */}
-                <Route path="/categories" element={<CategoryPage />} />
-                <Route path="/server/update-channels" element={<ChannelPage />} />
-                <Route path="/server/update-logs" element={<LogPage />} />
-                <Route path="/server/update-levels" element={<LevelPage />} />
-                <Route path="/server/update-economy" element={<EconomyPage />} />
+                <Route path="/dashboard/categories" element={<CategoryPage />} />
+                <Route path="/dashboard/channels" element={<ChannelPage />} />
+                <Route path="/dashboard/logs" element={<LogPage />} />
+                <Route path="/dashboard/levels" element={<LevelPage />} />
+                <Route path="/dashboard/economy" element={<EconomyPage />} />
             </Routes>
         </GuildContext.Provider>
     );

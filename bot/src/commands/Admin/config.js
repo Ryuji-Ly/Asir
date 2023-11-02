@@ -52,6 +52,23 @@ module.exports = {
                         .addChannelTypes(ChannelType.GuildText)
                         .setRequired(true)
                 )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("report-channel-set")
+                .setDescription("Set a channel as message reports channel")
+                .addChannelOption((option) =>
+                    option
+                        .setName("channel")
+                        .setDescription("The channel you want to set")
+                        .addChannelTypes(ChannelType.GuildText)
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("report-channel-remove")
+                .setDescription("Removes the message reports channel")
         ),
     /**
      *
@@ -109,6 +126,34 @@ module.exports = {
             await data.save();
             await interaction.reply(`Removed ${channel} from suggestion channels.`);
             return;
+        }
+        if (subcommand === "report-channel-set") {
+            const channel = options.getChannel("channel");
+            if (data.reportChannelId === "") {
+                data.reportChannelId = channel.id;
+                await data.save();
+                return interaction.reply(
+                    `You have set ${channel} as your message reports channel!`
+                );
+            } else {
+                if (data.reportChannelId === channel.id)
+                    return interaction.reply(
+                        `${channel} is already configured as your message reports channel.`
+                    );
+                const previousChannel = data.reportChannelId;
+                data.reportChannelId = channel.id;
+                await data.save();
+                return interaction.reply(
+                    `You have replaced the previous message reports channel <#${previousChannel}> with ${channel}.`
+                );
+            }
+        }
+        if (subcommand === "report-channel-remove") {
+            if (data.reportChannelId === "")
+                return interaction.reply(`You do not have a message reports channel setup.`);
+            data.reportChannelId = "";
+            await data.save();
+            return interaction.reply(`You have removed your message reports channel.`);
         }
         return;
     },

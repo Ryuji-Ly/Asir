@@ -57,7 +57,15 @@ const guildConfigurationSchema = new Schema({
         type: String,
         default: "",
     },
+    voiceLogChannelId: {
+        type: String,
+        default: "",
+    },
     ticketChannelId: {
+        type: String,
+        default: "",
+    },
+    levelChannelId: {
         type: String,
         default: "",
     },
@@ -66,6 +74,10 @@ const guildConfigurationSchema = new Schema({
         default: "",
     },
     ignoredChannelIds: {
+        type: Array,
+        default: [],
+    },
+    restrictedChannelIds: {
         type: Array,
         default: [],
     },

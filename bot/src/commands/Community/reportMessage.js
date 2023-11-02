@@ -19,12 +19,21 @@ module.exports = {
         const message = interaction.channel.messages.fetch(interaction.targetId);
         if ((await message).author.bot)
             return interaction.reply({ content: "This is a bot message...", ephemeral: true });
-        const config = guildConfiguration.findOne({ guildId: interaction.guild.id });
+        const config = await guildConfiguration.findOne({ guildId: interaction.guild.id });
+        if (config.reportChannelId === "")
+            return interaction.reply({
+                content:
+                    "The Report Message function has not been configured yet, please ask the server owner to configure the report channel",
+                ephemeral: true,
+            });
         const channel = interaction.guild.channels.cache.find(
             (channel) => channel.id === config.reportChannelId
         );
         const embed = new EmbedBuilder()
-            .setAuthor({ name: interaction.user.username, iconURL: interaction.user.avatarURL() })
+            .setAuthor({
+                name: interaction.user.username,
+                iconURL: interaction.user.avatarURL(),
+            })
             .setTitle("A message has been reported")
             .setColor("Purple")
             .setFooter({ text: "Created by ryujily" })

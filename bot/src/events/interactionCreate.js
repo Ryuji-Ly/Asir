@@ -22,13 +22,13 @@ module.exports = {
                 content: "You are blacklisted from all commands",
                 ephemeral: true,
             });
-        if (!whitelist.includes(interaction.user.id)) {
-            return interaction.reply({
-                content:
-                    "This bot is currently under development, you do not have access to commands yet",
-                ephemeral: true,
-            });
-        }
+        // if (!whitelist.includes(interaction.user.id)) {
+        //     return interaction.reply({
+        //         content:
+        //             "This bot is currently under development, you do not have access to commands yet",
+        //         ephemeral: true,
+        //     });
+        // }
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
         //check if user data exists
