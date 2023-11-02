@@ -27,6 +27,7 @@ var colors = require("colors");
 colors.enable();
 
 client.commands = new Collection();
+client.configs = new Collection();
 
 require("dotenv").config();
 

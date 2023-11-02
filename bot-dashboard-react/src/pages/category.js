@@ -39,7 +39,7 @@ export const CategoryPage = () => {
                     </Grid>
                 </div>
                 <div
-                    onClick={() => navigate("../dashboard/logs")}
+                    onClick={() => navigate("/dashboard/logs")}
                     style={{ borderTop: "1px solid #ffffff1b", marginTop: "10px" }}
                 >
                     <Flex style={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -54,7 +54,7 @@ export const CategoryPage = () => {
                     </Grid>
                 </div>
                 <div
-                    onClick={() => navigate("../dashboard/economy")}
+                    onClick={() => navigate("/dashboard/economy")}
                     style={{ borderTop: "1px solid #ffffff1b", marginTop: "10px" }}
                 >
                     <Flex style={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -68,11 +68,12 @@ export const CategoryPage = () => {
                         <OptionButton>Custom Role Limit</OptionButton>
                         <OptionButton>Multiplier Limits</OptionButton>
                         <OptionButton>Group Costs</OptionButton>
-                        <OptionButton>Minigame rewards</OptionButton>
+                        <OptionButton>Default Shop Costs</OptionButton>
+                        <OptionButton>Minigame Rewards</OptionButton>
                     </Grid>
                 </div>
                 <div
-                    onClick={() => navigate("../dashboard/levels")}
+                    onClick={() => navigate("/dashboard/levels")}
                     style={{ borderTop: "1px solid #ffffff1b", marginTop: "10px" }}
                 >
                     <Flex style={{ alignItems: "center", justifyContent: "space-between" }}>

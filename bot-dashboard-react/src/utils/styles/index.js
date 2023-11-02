@@ -73,3 +73,31 @@ export const Grid = styled.div`
     grid-template-columns: 1fr 1fr 1fr 1fr;
     column-gap: 5px;
 `;
+
+export const InputField = styled.input`
+    padding: 14px 16px;
+    box-sizing: border-box;
+    font-size: 16px;
+    color: #ffffff;
+    font-family: DM Sans;
+    background-color: #252525a4;
+    border-radius: 10px;
+    border: 1px solid #3f3f3f;
+    outline: none;
+    width: 100%;
+    &:focus {
+        outline: 2px solid #ffffff5a;
+    }
+`;
+// background-color: #3d3d3d;
+
+export const Button = styled.button`
+    padding: 10px 24px;
+    border-radius: 5px;
+    outline: none;
+    border: none;
+    font-size 16px;
+    color: #fff;
+    font-family: DM Sans;
+    background-color: #006ed3;
+`;

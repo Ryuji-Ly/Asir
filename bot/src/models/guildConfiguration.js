@@ -141,6 +141,14 @@ const guildConfigurationSchema = new Schema({
         type: Number,
         default: 3,
     },
+    multiplierBaseCost: {
+        type: Number,
+        default: 10000,
+    },
+    customeRoleCost: {
+        type: Number,
+        default: 20000,
+    },
     customRoleLimit: {
         type: Number,
         default: 5,
