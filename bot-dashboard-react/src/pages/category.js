@@ -1,5 +1,3 @@
-import { useContext } from "react";
-import { GuildContext } from "../utils/contexts/guildContext";
 import { Container, Flex, Grid, OptionButton, Title } from "../utils/styles";
 import {
     IoSettingsOutline,
@@ -10,7 +8,6 @@ import {
 import { useNavigate } from "react-router-dom";
 
 export const CategoryPage = () => {
-    const { guildId } = useContext(GuildContext);
     const navigate = useNavigate();
     return (
         <div style={{ padding: "30px 0" }}>
@@ -69,7 +66,7 @@ export const CategoryPage = () => {
                         <OptionButton>Multiplier Limits</OptionButton>
                         <OptionButton>Group Costs</OptionButton>
                         <OptionButton>Default Shop Costs</OptionButton>
-                        <OptionButton>Minigame Rewards</OptionButton>
+                        <OptionButton> Default Minigame Rewards</OptionButton>
                     </Grid>
                 </div>
                 <div

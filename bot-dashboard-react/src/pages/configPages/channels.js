@@ -3,7 +3,10 @@ import { Button, Container, Flex, InputField, Title } from "../../utils/styles";
 export const ChannelPage = () => {
     return (
         <div style={{ padding: "30px 0" }}>
-            <Container style={{ width: "800px", marginTop: "50px" }}>
+            <Title style={{ textAlign: "center" }}>Channels</Title>
+            <Container
+                style={{ width: "800px", marginTop: "10px", borderTop: "1px solid #ffffff1a" }}
+            >
                 <Title>Update Welcome Channel</Title>
                 <form>
                     <div>

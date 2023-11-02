@@ -10,7 +10,7 @@ export const EconomyPage = () => {
                 <Title>Update Currency Name</Title>
                 <form>
                     <div>
-                        <label htmlFor="welcome">Current Currency Name</label>
+                        <label htmlFor="currencyname">Current Currency Name</label>
                     </div>
                     <InputField style={{ margin: "10px 0" }} />
                     <Flex style={{ justifyContent: "flex-end" }}>
@@ -30,7 +30,7 @@ export const EconomyPage = () => {
                 <Title>Update Currency gained by Activity</Title>
                 <form>
                     <div>
-                        <label htmlFor="welcome">Current Currency gained</label>
+                        <label htmlFor="currencygain">Current Currency gained</label>
                     </div>
                     <InputField type="number" min={0} style={{ margin: "10px 0" }} />
                     <Flex style={{ justifyContent: "flex-end" }}>
@@ -50,11 +50,11 @@ export const EconomyPage = () => {
                 <Title>Update Daily Minimum & Maximum</Title>
                 <form>
                     <div>
-                        <label htmlFor="welcome">Current Daily Minimum</label>
+                        <label htmlFor="dailymin">Current Daily Minimum</label>
                     </div>
                     <InputField type="number" min={1} style={{ margin: "10px 0" }} />
                     <div>
-                        <label htmlFor="welcome">Current Daily Maximum</label>
+                        <label htmlFor="dailymax">Current Daily Maximum</label>
                     </div>
                     <InputField type="number" min={10} style={{ margin: "10px 0" }} />
                     <Flex style={{ justifyContent: "flex-end" }}>
@@ -74,7 +74,7 @@ export const EconomyPage = () => {
                 <Title>Update Custom Role Limit</Title>
                 <form>
                     <div>
-                        <label htmlFor="welcome">Current Custom Role Limit</label>
+                        <label htmlFor="customrolelimit">Current Custom Role Limit</label>
                     </div>
                     <InputField type="number" min={1} style={{ margin: "10px 0" }} />
                     <Flex style={{ justifyContent: "flex-end" }}>
@@ -94,7 +94,7 @@ export const EconomyPage = () => {
                 <Title>Update Multiplier Limit</Title>
                 <form>
                     <div>
-                        <label htmlFor="welcome">Current Multiplier Limit</label>
+                        <label htmlFor="multiplierlimit">Current Multiplier Limit</label>
                     </div>
                     <InputField type="number" min={1} style={{ margin: "10px 0" }} />
                     <Flex style={{ justifyContent: "flex-end" }}>
@@ -114,11 +114,11 @@ export const EconomyPage = () => {
                 <Title>Update Default Shop Costs</Title>
                 <form>
                     <div>
-                        <label htmlFor="welcome">Current Multiplier Cost</label>
+                        <label htmlFor="multipliercost">Current Multiplier Cost</label>
                     </div>
                     <InputField type="number" min={1} style={{ margin: "10px 0" }} />
                     <div>
-                        <label htmlFor="welcome">Current Custome Role Cost</label>
+                        <label htmlFor="customrolecost">Current Custome Role Cost</label>
                     </div>
                     <InputField type="number" min={1} style={{ margin: "10px 0" }} />
                     <Flex style={{ justifyContent: "flex-end" }}>
@@ -138,15 +138,17 @@ export const EconomyPage = () => {
                 <Title>Update Group Costs</Title>
                 <form>
                     <div>
-                        <label htmlFor="welcome">Current Group Create Cost</label>
+                        <label htmlFor="groupcost">Current Group Create Cost</label>
                     </div>
                     <InputField type="number" min={10} style={{ margin: "10px 0" }} />
                     <div>
-                        <label htmlFor="welcome">Current Group Multiplier Base Cost</label>
+                        <label htmlFor="groupmultipliercost">
+                            Current Group Multiplier Base Cost
+                        </label>
                     </div>
                     <InputField type="number" min={10} style={{ margin: "10px 0" }} />
                     <div>
-                        <label htmlFor="welcome">Current Group Expand Base Cost</label>
+                        <label htmlFor="groupexpandcost">Current Group Expand Base Cost</label>
                     </div>
                     <InputField type="number" min={10} style={{ margin: "10px 0" }} />
                     <Flex style={{ justifyContent: "flex-end" }}>
@@ -166,7 +168,9 @@ export const EconomyPage = () => {
                 <Title>Update Minigame Rewards</Title>
                 <form>
                     <div>
-                        <label htmlFor="welcome">Current Minigame Rewards</label>
+                        <label htmlFor="defaultminigamereward">
+                            Current Default Minigame Rewards
+                        </label>
                     </div>
                     <InputField type="number" min={1} style={{ margin: "10px 0" }} />
                     <Flex style={{ justifyContent: "flex-end" }}>
