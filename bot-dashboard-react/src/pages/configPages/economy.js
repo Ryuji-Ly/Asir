@@ -1,8 +1,8 @@
-import { Button, Container, Flex, InputField, Title } from "../../utils/styles";
+import { Button, Container, Flex, InputField, Page, Title } from "../../utils/styles";
 
 export const EconomyPage = () => {
     return (
-        <div style={{ padding: "30px 0" }}>
+        <Page>
             <Title style={{ textAlign: "center" }}>Economy</Title>
             <Container
                 style={{ width: "800px", marginTop: "10px", borderTop: "1px solid #ffffff1a" }}
@@ -184,6 +184,6 @@ export const EconomyPage = () => {
                     </Flex>
                 </form>
             </Container>
-        </div>
+        </Page>
     );
 };

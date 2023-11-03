@@ -1,7 +1,7 @@
-import { Title, Container, InputField, Flex, Button } from "../../utils/styles";
+import { Title, Container, InputField, Flex, Button, Page } from "../../utils/styles";
 
 export const LogPage = () => (
-    <div>
+    <Page>
         <Title style={{ textAlign: "center" }}>Logs</Title>
         <Container style={{ width: "800px", marginTop: "10px", borderTop: "1px solid #ffffff1a" }}>
             <Title>Update Moderation Logs</Title>
@@ -148,5 +148,5 @@ export const LogPage = () => (
                 </Flex>
             </form>
         </Container>
-    </div>
+    </Page>
 );

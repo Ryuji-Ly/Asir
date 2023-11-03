@@ -96,8 +96,35 @@ export const Button = styled.button`
     border-radius: 5px;
     outline: none;
     border: none;
-    font-size 16px;
+    font-size: 16px;
     color: #fff;
     font-family: DM Sans;
     background-color: #006ed3;
+    cursor: pointer;
+`;
+
+export const Page = styled.div`
+    padding: 35px;
+`;
+
+export const SelectMenu = styled.select`
+    padding: 12px 16px;
+    box-sizing: border-box;
+    margin: 10px 0;
+    width: 100%;
+    font-family: DM Sans;
+    font-size: 18px;
+    background-color: inherit;
+    color: #fff;
+    appearance: none;
+    border: 1px solid #3f3f3f;
+    border-radius: 5px;
+    & > option {
+        background-color: #252525;
+    }
+    &.multipleselect {
+        & > option {
+            background-color: inherit;
+        }
+    }
 `;

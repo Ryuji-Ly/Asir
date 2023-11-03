@@ -1,7 +1,7 @@
-import { Title, Container, InputField, Button, Flex } from "../../utils/styles";
+import { Title, Container, InputField, Button, Flex, Page } from "../../utils/styles";
 
 export const LevelPage = () => (
-    <div>
+    <Page>
         <Title style={{ textAlign: "center" }}>Levels</Title>
         <Container style={{ width: "800px", marginTop: "10px", borderTop: "1px solid #ffffff1a" }}>
             <Title>Update Base Experience Requirement</Title>
@@ -63,5 +63,5 @@ export const LevelPage = () => (
                 </Flex>
             </form>
         </Container>
-    </div>
+    </Page>
 );
