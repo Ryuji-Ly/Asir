@@ -4,14 +4,13 @@ const {
     EmbedBuilder,
     ChannelType,
     PermissionFlagsBits,
-    channelLink,
 } = require("discord.js");
 const guildConfiguration = require("../../models/guildConfiguration");
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("config")
-        .setDescription("All configure settings")
+        .setName("config-1")
+        .setDescription("Configuration settings 1")
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
         .addSubcommand((subcommand) =>
@@ -19,6 +18,7 @@ module.exports = {
                 .setName("current")
                 .setDescription("Displayes the current server configurations")
         )
+        //currency name
         .addSubcommand((subcommand) =>
             subcommand
                 .setName("set-currency-name")
