@@ -5,35 +5,20 @@ const guildConfigurationSchema = new Schema({
         type: String,
         required: true,
     },
-    modRoleid: {
-        type: String,
-        default: "",
-    },
+    // Channel ids
     welcomeChannelId: {
         type: String,
         default: "",
     },
     suggestionChannelIds: {
-        type: [String],
+        type: Array,
         default: [],
     },
     ignoredStealUserIds: {
         type: Array,
         default: [],
     },
-    eventEffects: {
-        type: Array,
-        default: [],
-    },
-    rankRoles: {
-        type: Array,
-        default: [],
-    },
     groupCategoryId: {
-        type: String,
-        default: "",
-    },
-    introductionChannelId: {
         type: String,
         default: "",
     },
@@ -69,10 +54,6 @@ const guildConfigurationSchema = new Schema({
         type: String,
         default: "",
     },
-    ticketSubject: {
-        type: String,
-        default: "",
-    },
     ignoredChannelIds: {
         type: Array,
         default: [],
@@ -85,6 +66,61 @@ const guildConfigurationSchema = new Schema({
         type: Array,
         default: [],
     },
+    // other server settings
+    warnLimit: {
+        type: Number,
+        default: 3,
+    },
+    timeoutDuration: {
+        type: Number,
+        default: 1000 * 60 * 60,
+    },
+    messageLogs: {
+        type: Array,
+        default: [
+            { name: "deleted", value: true },
+            { name: "edited", value: true },
+            { name: "purged", value: true },
+        ],
+    },
+    modLogs: {
+        type: Array,
+        default: [
+            { name: "warn", value: true },
+            { name: "timeout", value: true },
+            { name: "kick", value: true },
+            { name: "ban", value: true },
+        ],
+    },
+    memberLogs: {
+        type: Array,
+        default: [
+            { name: "role", value: true },
+            { name: "name", value: true },
+            { name: "avatar", value: true },
+        ],
+    },
+    voiceLogs: {
+        type: Array,
+        default: [
+            { name: "join", value: true },
+            { name: "move", value: true },
+            { name: "leave", value: true },
+        ],
+    },
+    rankRoles: {
+        type: Array,
+        default: [],
+    },
+    ticketSubject: {
+        type: String,
+        default: "",
+    },
+    modRoleid: {
+        type: String,
+        default: "",
+    },
+    // Economy stuff
     currencyName: {
         type: String,
         default: "Causality coins",
@@ -145,6 +181,10 @@ const guildConfigurationSchema = new Schema({
         type: Number,
         default: 10000,
     },
+    customeRole: {
+        type: Boolean,
+        default: true,
+    },
     customeRoleCost: {
         type: Number,
         default: 20000,
@@ -153,13 +193,22 @@ const guildConfigurationSchema = new Schema({
         type: Number,
         default: 5,
     },
+    shopItems: {
+        type: Array,
+        default: [],
+    },
     slotsTotal: {
         type: Number,
         default: 0,
     },
+    // leveling
     xpBaseRequirement: {
         type: Number,
         default: 100,
+    },
+    xpScaling: {
+        type: String,
+        default: "multiply",
     },
     blacklist: {
         type: Array,

@@ -8,6 +8,7 @@ const {
     Embed,
     Collection,
 } = require(`discord.js`);
+const GuildConfig = require("./models/guildConfiguration");
 const fs = require("fs");
 const client = new Client({
     intents: [
@@ -41,17 +42,21 @@ mongoose
         useUnifiedTopology: true,
     })
     .then(() => {
-        console.log("[BOT] Connected to the database!".green);
+        console.log("[DATABASE] Connected to the database!".green);
     })
     .catch((err) => {
-        console.log(err);
+        console.log(`[DATABASE] Error with connecting to database: ${err}`);
     });
 
 (async () => {
     for (file of functions) {
         require(`./functions/${file}`)(client);
     }
-    client.handleEvents(eventFiles, "./src/events");
-    client.handleCommands(commandFolders, "./src/commands");
-    client.login(process.env.token);
+    await client.handleEvents(eventFiles, "./src/events");
+    await client.handleCommands(commandFolders, "./src/commands");
+    await client.login(process.env.token);
+    client.guilds.cache.forEach(async (guild) => {
+        const data = await GuildConfig.findOne({ guildId: guild.id });
+        client.configs.set(guild.id, data);
+    });
 })();

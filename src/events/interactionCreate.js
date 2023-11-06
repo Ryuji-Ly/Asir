@@ -22,13 +22,6 @@ module.exports = {
                 content: "You are blacklisted from all commands",
                 ephemeral: true,
             });
-        // if (!whitelist.includes(interaction.user.id)) {
-        //     return interaction.reply({
-        //         content:
-        //             "This bot is currently under development, you do not have access to commands yet",
-        //         ephemeral: true,
-        //     });
-        // }
         const command = client.commands.get(interaction.commandName);
         if (!command) return;
         //check if user data exists
@@ -92,14 +85,18 @@ module.exports = {
             console.log("[INTERACTION CREATE] error with updating command counter".red);
         }
         //execute the command
-        try {
-            await command.execute(interaction, client);
-        } catch (error) {
-            console.log(`[INTERACTION CREATE] ${error}`.red);
-            await interaction.reply({
-                content: "There was an error while executing this command!",
-                ephemeral: true,
-            });
-        }
+        // try {
+        await command.execute(interaction, client);
+        // } catch (error) {
+        //     console.log(
+        //         `[INTERACTION CREATE] ${error}\n[BOT] ${interaction.user.username} used ${
+        //             interaction.commandName
+        //         } at ${new Date(Date.now())}`.red
+        //     );
+        //     await interaction.reply({
+        //         content: "There was an error while executing this command!",
+        //         ephemeral: true,
+        //     });
+        // }
     },
 };
