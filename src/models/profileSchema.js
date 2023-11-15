@@ -50,6 +50,14 @@ const profileSchema = new mongoose.Schema({
         type: Array,
         default: [],
     },
+    messageCounter: {
+        type: Number,
+        default: 0,
+    },
+    blacklistedCommands: {
+        type: Array,
+        default: [],
+    },
     warnings: {
         type: Number,
         default: 0,

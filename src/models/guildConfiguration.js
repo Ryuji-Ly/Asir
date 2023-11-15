@@ -22,10 +22,6 @@ const guildConfigurationSchema = new Schema({
         type: String,
         default: "",
     },
-    introductionRoleId: {
-        type: String,
-        default: "",
-    },
     reportChannelId: {
         type: String,
         default: "",
@@ -112,13 +108,25 @@ const guildConfigurationSchema = new Schema({
         type: Array,
         default: [],
     },
+    introQuestions: {
+        type: Array,
+        default: [],
+    },
     ticketSubject: {
         type: String,
         default: "",
     },
-    modRoleid: {
-        type: String,
-        default: "",
+    blacklistedWords: {
+        type: Array,
+        default: [],
+    },
+    Level: {
+        type: Boolean,
+        default: true,
+    },
+    Economy: {
+        type: Boolean,
+        default: true,
     },
     // Economy stuff
     currencyName: {
@@ -181,11 +189,11 @@ const guildConfigurationSchema = new Schema({
         type: Number,
         default: 10000,
     },
-    customeRole: {
+    customRole: {
         type: Boolean,
         default: true,
     },
-    customeRoleCost: {
+    customRoleCost: {
         type: Number,
         default: 20000,
     },

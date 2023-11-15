@@ -7,6 +7,7 @@ const { EmbedBuilder } = require("discord.js");
 module.exports = {
     name: "guildMemberAdd",
     async execute(member, client) {
+        if (member.bot) return;
         const newUser = await ProfileModel.create({
             userId: member.user.id,
             guildId: member.guild.id,

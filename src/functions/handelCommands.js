@@ -27,13 +27,19 @@ module.exports = (client) => {
 
         (async () => {
             try {
-                console.log("[BOT] Started refreshing application (/) commands.".blue);
+                console.log(
+                    `[BOT] Started refreshing ${client.commandArray.length} application (/) commands.`
+                        .blue
+                );
 
                 await rest.put(Routes.applicationCommands(clientId), {
                     body: client.commandArray,
                 });
 
-                console.log("[BOT] Successfully reloaded application (/) commands.".blue);
+                console.log(
+                    `[BOT] Successfully reloaded ${client.commandArray.length} application (/) commands.`
+                        .blue
+                );
             } catch (error) {
                 console.error(`[COMMAND HANDLER] ${error}`.red);
             }

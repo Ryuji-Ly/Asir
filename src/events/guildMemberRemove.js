@@ -8,6 +8,7 @@ const { EmbedBuilder } = require("discord.js");
 module.exports = {
     name: "guildMemberRemove",
     async execute(member, client) {
+        if (member.bot) return;
         await ProfileModel.deleteMany({ guildId: member.guild.id, userId: member.id });
         const guildconfig = await guildConfiguration.findOne({ guildId: member.guild.id });
         if (!guildconfig) return;

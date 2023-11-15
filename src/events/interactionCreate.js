@@ -1,6 +1,5 @@
 const { Interaction } = require("discord.js");
 const ProfileModel = require("../models/profileSchema");
-const guildConfiguration = require("../models/guildConfiguration");
 const whitelist = ["348902272534839296"];
 var colors = require("colors");
 colors.enable();
@@ -15,9 +14,9 @@ module.exports = {
      */
     async execute(interaction, client) {
         //execute all commands
-        const data = await guildConfiguration.findOne({ guildId: interaction.guild.id });
+        const config = await client.configs.get(interaction.guild.id);
         if (!interaction.isCommand()) return;
-        if (data.blacklist.includes(interaction.user.id))
+        if (config.blacklist.includes(interaction.user.id))
             return interaction.reply({
                 content: "You are blacklisted from all commands",
                 ephemeral: true,
