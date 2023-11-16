@@ -2,7 +2,6 @@ var colors = require("colors");
 colors.enable();
 const guildConfiguration = require("../models/guildConfiguration");
 const Group = require("../models/group");
-const Introductions = require("../models/introduction");
 const ProfileModel = require("../models/profileSchema");
 const Suggestion = require("../models/suggestion");
 
