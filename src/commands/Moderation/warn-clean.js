@@ -31,13 +31,16 @@ module.exports = {
                 iconURL: interaction.guild.iconURL(),
             })
             .setColor("Green")
-            .setDescription(`${user}'s warnings has been purged`);
-        if (config.modLogChannelId !== "") {
-            const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
-            if (!channel) {
-                return;
+            .setDescription(`${user}'s warnings has been purged`)
+            .setTimestamp();
+        if (config.modLogs[0].value) {
+            if (config.modLogChannelId !== "") {
+                const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+                if (!channel) {
+                    return;
+                }
+                await channel.send({ embeds: [embed] });
             }
-            await channel.send({ embeds: [embed] });
         }
         interaction.reply({ embeds: [embed] });
         return;

@@ -60,13 +60,16 @@ module.exports = {
                 .setColor("Red")
                 .setDescription(
                     `${user} has been warned for: ${reason}. As they have surpassed the warn limit, they have been automatically timed out`
-                );
-            if (config.modLogChannelId !== "") {
-                const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
-                if (!channel) {
-                    return;
+                )
+                .setTimestamp();
+            if (config.modLogs[0].value) {
+                if (config.modLogChannelId !== "") {
+                    const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+                    if (!channel) {
+                        return;
+                    }
+                    await channel.send({ embeds: [embed] });
                 }
-                await channel.send({ embeds: [embed] });
             }
             await interaction.reply({
                 content: `Successfully warned ${user}, as they have surpassed the warn limit, they have been timed out automatically`,
@@ -84,12 +87,14 @@ module.exports = {
                 .setDescription(
                     `${user} has been warned for: ${reason}. Their warning count is now at ${data.warnings}`
                 );
-            if (config.modLogChannelId !== "") {
-                const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
-                if (!channel) {
-                    return;
+            if (config.modLogs[0].value) {
+                if (config.modLogChannelId !== "") {
+                    const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+                    if (!channel) {
+                        return;
+                    }
+                    await channel.send({ embeds: [embed] });
                 }
-                await channel.send({ embeds: [embed] });
             }
             await data.save();
             await interaction.reply({ content: `Successfully warned ${user}`, ephemeral: true });
