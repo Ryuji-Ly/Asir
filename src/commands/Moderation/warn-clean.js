@@ -1,0 +1,45 @@
+const {
+    SlashCommandBuilder,
+    Interaction,
+    EmbedBuilder,
+    PermissionFlagsBits,
+} = require("discord.js");
+const ProfileModel = require("../../models/profileSchema");
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName("purge-warns")
+        .setDescription("Removes all warnings for a user")
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
+        .addUserOption((option) =>
+            option.setName("user").setDescription("The user you want to warn").setRequired(true)
+        ),
+    /**
+     *
+     *
+     * @param {Interaction} interaction
+     */
+    async execute(interaction, client) {
+        const config = await client.configs.get(interaction.guild.id);
+        const user = interaction.options.getMember("user");
+        const data = await ProfileModel.findOne({ guildId: interaction.guild.id, userId: user.id });
+        data.warnings = 0;
+        await data.save();
+        const embed = new EmbedBuilder()
+            .setAuthor({
+                name: `${interaction.user.displayName}`,
+                iconURL: interaction.guild.iconURL(),
+            })
+            .setColor("Green")
+            .setDescription(`${user}'s warnings has been purged`);
+        if (config.modLogChannelId !== "") {
+            const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+            if (!channel) {
+                return;
+            }
+            await channel.send({ embeds: [embed] });
+        }
+        interaction.reply({ embeds: [embed] });
+        return;
+    },
+};

@@ -62,6 +62,10 @@ const profileSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    infractions: {
+        type: Array,
+        default: [],
+    },
 });
 
 const model = mongoose.model("userdatabase", profileSchema);

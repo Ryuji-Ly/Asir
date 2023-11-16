@@ -830,5 +830,6 @@ module.exports = {
             });
         }
         interaction.reply({ content: "This command is still being programmed", ephemeral: true });
+        return;
     },
 };
