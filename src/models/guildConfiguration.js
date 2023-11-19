@@ -58,6 +58,10 @@ const guildConfigurationSchema = new Schema({
         type: Array,
         default: [],
     },
+    disabledCommands: {
+        type: Array,
+        default: [],
+    },
     minigameChannelIds: {
         type: Array,
         default: [],

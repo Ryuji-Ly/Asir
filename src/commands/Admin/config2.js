@@ -450,6 +450,19 @@ module.exports = {
                         .setDescription("The level of the rank you want to remove")
                         .setRequired(true)
                 )
+        )
+        //enable disable commands
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName("commands")
+                .setDescription("Disable/enable commands for the entire server")
+                .addStringOption((option) =>
+                    option
+                        .setName("command")
+                        .setDescription("The command to disable/enable")
+                        .setRequired(true)
+                        .setAutocomplete(true)
+                )
         ),
     /**
      *
@@ -770,7 +783,7 @@ module.exports = {
             data.groupChannelMulti = groupbonus;
             await data.save();
             await client.configs.set(guild.id, data);
-            interaction.reply(
+            await interaction.reply(
                 `Base Experience Requirement is now **${requirement}**\nExperience Scaling type is now **${scaling}**\nGroup Channel Bonus Multiplier is now **${groupbonus}**`
             );
             return;
@@ -781,14 +794,14 @@ module.exports = {
             const img = options.getAttachment("img") || "";
             for (let i = 0; i < data.rankRoles.length; i++) {
                 if (level === data.rankRoles[i].level)
-                    return interaction.reply({
+                    return await interaction.reply({
                         content: "This level already has a rank",
                         ephemeral: true,
                     });
             }
             for (let i = 0; i < data.rankRoles.length; i++) {
                 if (role.id === data.rankRoles[i].role)
-                    return interaction.reply({
+                    return await interaction.reply({
                         content: "This role already has a rank",
                         ephemeral: true,
                     });
@@ -798,7 +811,7 @@ module.exports = {
                 if (attachIsImage(img)) {
                     image = img.url;
                 } else {
-                    return interaction.reply({
+                    return await interaction.reply({
                         content: "This attachment is invalid",
                         ephemeral: true,
                     });
@@ -808,7 +821,7 @@ module.exports = {
             data.rankRoles.push(newRank);
             await data.save();
             await client.configs.set(guild.id, data);
-            return interaction.reply(
+            return await interaction.reply(
                 `You have set up a rank for level ${level}, the corresponding role is ${role}\n${image}`
             );
         }
@@ -819,15 +832,32 @@ module.exports = {
                     data.rankRoles.splice(i, 1);
                     await data.save();
                     await client.configs.set(guild.id, data);
-                    return interaction.reply({
+                    return await interaction.reply({
                         content: `You have removed the rank corresponding with the level ${level}`,
                     });
                 }
             }
-            return interaction.reply({
+            return await interaction.reply({
                 content: `A rank with level ${level} does not exist`,
                 ephemeral: true,
             });
+        }
+        if (subcommand === "commands") {
+            const command = options.getString("command");
+            if (data.disabledCommands.includes(command)) {
+                const index = data.disabledCommands.indexOf(command);
+                data.disabledCommands.splice(index, 1);
+                await data.save();
+                await client.configs.set(guild.id, data);
+                await interaction.reply(`You have enabled **${command}** for the entire server`);
+                return;
+            } else {
+                data.disabledCommands.push(command);
+                await data.save();
+                await client.configs.set(guild.id, data);
+                await interaction.reply(`You have disabled **${command}** for the entire server`);
+            }
+            return;
         }
         interaction.reply({ content: "This command is still being programmed", ephemeral: true });
         return;

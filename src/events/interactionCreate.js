@@ -31,6 +31,27 @@ module.exports = {
                     interaction.respond(results.slice(0, 25)).catch(() => {});
                     return;
                 }
+                if (interaction.commandName === "config2") {
+                    const subcommand = interaction.options.getSubcommand();
+                    if (subcommand === "commands") {
+                        const excluded = ["config1", "config2"];
+                        const array = [...client.commands.values()].filter(
+                            (command) => !excluded.includes(command.data.name)
+                        );
+                        const focusedValue = interaction.options.getFocused();
+                        const filterdChoises = array.filter((command) =>
+                            command.data.name.toLowerCase().startsWith(focusedValue.toLowerCase())
+                        );
+                        const results = filterdChoises.map((choice) => {
+                            return {
+                                name: `${choice.data.name}`,
+                                value: `${choice.data.name}`,
+                            };
+                        });
+                        await interaction.respond(results.slice(0, 25)).catch(() => {});
+                        return;
+                    }
+                }
                 return;
             }
         } catch (error) {
@@ -54,11 +75,20 @@ module.exports = {
                 userId: interaction.user.id,
             });
             if (!interaction.isCommand()) return;
+            //checking if command is disabled
+            if (config.disabledCommands.includes(interaction.commandName)) {
+                return interaction.reply({
+                    content: `This command has been disabled for this server`,
+                    ephemeral: true,
+                });
+            }
+            //checking if a user is blacklisted from commands
             if (config.blacklist.includes(interaction.user.id))
                 return interaction.reply({
                     content: "You are blacklisted from all commands",
                     ephemeral: true,
                 });
+            //checking if a command is blacklisted for a user or not
             if (data.blacklistedCommands.includes(interaction.commandName))
                 return interaction.reply({
                     content: "You are blacklisted from this command",

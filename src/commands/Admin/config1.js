@@ -443,6 +443,9 @@ module.exports = {
                 if (config.voiceLogs[i].value === false) emoji = "❌";
                 voicelogstring += `${emoji} ${config.voiceLogs[i].name}\n`;
             }
+            let disabledString;
+            if (config.disabledCommands.length === 0) disabledString = "N/A";
+            else disabledString = config.disabledCommands.join(", ");
             embed1.addFields(
                 {
                     name: `Warn limit before auto timeout`,
@@ -475,8 +478,8 @@ module.exports = {
                     inline: true,
                 },
                 {
-                    name: `Currency Name`,
-                    value: `${config.currencyName}`,
+                    name: `Disabled commands`,
+                    value: `${disabledString}`,
                     inline: true,
                 }
             );
@@ -494,6 +497,11 @@ module.exports = {
                     "Economy function is disabled, all economy related configs do not apply";
             else economystring = "Economy function is enabled";
             embed2.addFields(
+                {
+                    name: `Currency Name`,
+                    value: `${config.currencyName}`,
+                    inline: true,
+                },
                 {
                     name: "Level",
                     value: `${levelstring}`,
