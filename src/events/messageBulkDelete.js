@@ -22,7 +22,7 @@ module.exports = {
                         } else {
                             let attachString = `[${array[index].author.username}]: ${array[index].content} `;
                             for (let i = 0; i < attachmentArray.length; i++) {
-                                attachString += `${attachmentArray[i].name} - [View](${attachmentArray[i].url}) `;
+                                attachString += `${attachmentArray[i].name} - [View](${attachmentArray[i].proxyURL}) `;
                             }
                             string += `${attachString}\n`;
                         }
@@ -35,7 +35,7 @@ module.exports = {
                     embed.setDescription(string);
                     await logchannel.send({ embeds: [embed] });
                 }
-            }
+            } else console.log(`[MESSAGE BULK DELETE] Could not find message log channel`.red);
         }
         return;
     },

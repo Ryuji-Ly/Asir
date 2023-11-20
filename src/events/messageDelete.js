@@ -40,7 +40,7 @@ module.exports = {
                     if (attachmentArray.length !== 0) {
                         let string = "";
                         for (let i = 0; i < attachmentArray.length; i++) {
-                            string += `${attachmentArray[i].name} - [View](${attachmentArray[i].url})\n`;
+                            string += `${attachmentArray[i].name} - [View](${attachmentArray[i].proxyURL})\n`;
                         }
                         embed.addFields({
                             name: "Message Attachments",

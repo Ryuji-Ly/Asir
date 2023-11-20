@@ -7,6 +7,10 @@ module.exports = {
     async execute(message, client) {
         if (message.author.bot) return;
         const config = await client.configs.get(message.guild.id);
+        const chance = Math.floor(Math.random() * 1000000000001);
+        if (chance < 1) {
+            message.reply({ content: `<:MafuyuWhat:1162493558180298893>`, ephemeral: true });
+        }
         if (config.ignoredChannelIds.includes(message.channel.id)) return;
         //check if user data exists
         const user = await ProfileModel.findOne({

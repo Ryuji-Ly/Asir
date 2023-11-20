@@ -12,6 +12,7 @@ module.exports = {
             const channel = await oldMessage.guild.channels.cache.get(config.messageLogChannelId);
             if (channel) {
                 if (config.messageLogs[1].value) {
+                    if (oldMessage.content === newMessage.content) return;
                     const embed = new EmbedBuilder()
                         .setAuthor({
                             name: oldMessage.author.username,
@@ -20,17 +21,13 @@ module.exports = {
                         .setColor("Purple")
                         .setTitle(`Message Edited in ${oldMessage.channel}`)
                         .setDescription(
-                            `Message ID: ${oldMessage.id}\nMessage Link: [Click me](https://discord.com/channels/${newMessage.guildId}/${newMessage.channelId}/${newMessage.id})`
+                            `Message ID: ${oldMessage.id}\nMessage Link: [Click me](https://discord.com/channels/${newMessage.guildId}/${newMessage.channelId}/${newMessage.id})\n\n**Before**: ${oldMessage.content}\n**+After**: ${newMessage.content}`
                         )
                         .setFooter({ text: `ID: ${oldMessage.author.id}` })
                         .setTimestamp();
-                    embed.addFields(
-                        { name: "Before", value: `${oldMessage.content}` },
-                        { name: "After", value: `${newMessage.content}` }
-                    );
                     await channel.send({ embeds: [embed] });
                 }
-            }
+            } else console.log(`[MESSAGE UPDATE] Could not find message log channel`.red);
         }
         return;
     },
