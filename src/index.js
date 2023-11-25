@@ -60,3 +60,9 @@ mongoose
         client.configs.set(guild.id, data);
     });
 })();
+
+process.on("unhandledRejection", (reason, promise) => {
+    console.log(
+        `[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason: ${reason}`
+    );
+});
