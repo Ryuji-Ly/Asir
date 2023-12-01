@@ -21,6 +21,7 @@ const client = new Client({
         GatewayIntentBits.GuildEmojisAndStickers,
         GatewayIntentBits.GuildInvites,
         GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildModeration,
     ],
 });
 const mongoose = require("mongoose");
@@ -63,6 +64,6 @@ mongoose
 
 process.on("unhandledRejection", (reason, promise) => {
     console.log(
-        `[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason: ${reason}`
+        `[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason: ${reason}`.red
     );
 });
