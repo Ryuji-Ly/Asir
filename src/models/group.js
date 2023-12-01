@@ -1,6 +1,6 @@
-const { Schema, model } = require("mongoose");
+const mongoose = require("mongoose");
 
-const groupSchema = new Schema({
+const groupSchema = new mongoose.Schema({
     guildId: {
         type: String,
         required: true,
@@ -51,4 +51,6 @@ const groupSchema = new Schema({
     },
 });
 
-module.exports = model("group", groupSchema);
+const model = mongoose.model("group", groupSchema);
+
+module.exports = model;

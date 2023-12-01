@@ -1,6 +1,6 @@
-const { Schema, model } = require("mongoose");
+const mongoose = require("mongoose");
 
-const guildConfigurationSchema = new Schema({
+const guildConfigurationSchema = new mongoose.Schema({
     guildId: {
         type: String,
         required: true,
@@ -228,4 +228,6 @@ const guildConfigurationSchema = new Schema({
     },
 });
 
-module.exports = model("guildConfiguration", guildConfigurationSchema);
+const model = mongoose.model("guildConfiguration", guildConfigurationSchema);
+
+module.exports = model;
