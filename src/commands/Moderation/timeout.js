@@ -13,6 +13,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName("timeout")
         .setDescription("Time a user out for a specified duration(5s-28d)")
+        .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
         .addUserOption((option) =>
             option.setName("user").setDescription("The target user for timeout.").setRequired(true)
         )

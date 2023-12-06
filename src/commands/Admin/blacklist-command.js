@@ -10,6 +10,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName("blacklist-user-command")
         .setDescription("Disables/enables a command for a user")
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .addUserOption((option) =>
             option
                 .setName("user")
