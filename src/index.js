@@ -6,8 +6,10 @@ const {
     Permissions,
     MessageManager,
     Embed,
+    ActivityType,
     Collection,
 } = require(`discord.js`);
+const { ImgurClient } = require("imgur");
 const GuildConfig = require("./models/guildConfiguration");
 const fs = require("fs");
 const client = new Client({
