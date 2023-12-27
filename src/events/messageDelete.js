@@ -40,12 +40,16 @@ module.exports = {
                     if (attachmentArray.length !== 0) {
                         let string = "";
                         for (let i = 0; i < attachmentArray.length; i++) {
-                            string += `${attachmentArray[i].name} - [View](${attachmentArray[i].proxyURL})\n`;
+                            string += `${attachmentArray[i].name} - [View](${attachmentArray[i].url})\n`;
                         }
-                        embed.addFields({
-                            name: "Message Attachments",
-                            value: `${string}`,
-                        });
+                        embed
+                            .addFields({
+                                name: "Message Attachments",
+                                value: `${string}`,
+                            })
+                            .setFooter({
+                                text: `ID: ${message.author.id}`,
+                            });
                     }
                     await channel.send({ embeds: [embed] });
                     return;

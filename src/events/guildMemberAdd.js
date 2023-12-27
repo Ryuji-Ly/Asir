@@ -7,14 +7,14 @@ const { EmbedBuilder } = require("discord.js");
 module.exports = {
     name: "guildMemberAdd",
     async execute(member, client) {
-        if (member.bot) return;
+        if (member.user.bot) return;
         else {
             const newUser = await ProfileModel.create({
                 userId: member.user.id,
                 guildId: member.guild.id,
             });
             await newUser.save();
-            const guildconfig = await guildConfiguration.findOne({ guildId: member.guild.id });
+            const guildconfig = await client.configs.get(member.guild.id);
             if (guildconfig.welcomeChannelId !== "") {
                 const guild = member.guild;
                 try {

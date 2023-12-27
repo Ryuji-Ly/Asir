@@ -3,21 +3,31 @@ colors.enable();
 const ProfileModel = require("../models/profileSchema");
 const GroupModel = require("../models/group");
 const cooldown = new Set();
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, Message } = require("discord.js");
 function getRandomXp(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+async function removeRole(roleId, message) {
+    const role = message.guild.roles.cache.get(roleId);
+    await message.member.roles.remove(role);
+}
 
 module.exports = {
     name: "messageCreate",
+    /**
+     *
+     * @param {Message} message
+     * @param {*} client
+     * @returns
+     */
     async execute(message, client) {
         if (message.author.bot) return;
         const config = await client.configs.get(message.guild.id);
         const chance = Math.floor(Math.random() * 1000000000001);
         if (chance < 1) {
-            message.reply({ content: `<:MafuyuWhat:1162493558180298893>`, ephemeral: true });
+            message.reply(`<:MafuyuWhat:1162493558180298893>`);
         }
         if (config.ignoredChannelIds.includes(message.channel.id)) return;
         //check if user data exists and get the user data
@@ -62,7 +72,7 @@ module.exports = {
                     groupbonus = config.groupChannelMulti;
                 const xpToGive = getRandomXp(config.randomXpMin, config.randomXpMax);
                 const finalMulti = userdata.multiplier + groupbonus + groupmulti;
-                const finalXp = xpToGive * finalMulti;
+                const finalXp = Math.floor(xpToGive * finalMulti);
                 userdata.xp += finalXp;
                 // all the increase level or not logic
                 let levelRequirement = 0;
@@ -73,25 +83,66 @@ module.exports = {
                 } else if (config.xpScaling === "exponential") {
                     levelRequirement = userdata.level ** 2 * config.xpBaseRequirement;
                 }
-                // (still have to do the ranks)
+                // if user has to be leveled up
                 if (userdata.xp > levelRequirement) {
                     userdata.xp = userdata.xp - levelRequirement;
                     userdata.level += 1;
-                    if (config.levelChannelId !== "") {
-                        const channel = message.guild.channels.cache.find(
-                            (c) => c.id === config.levelChannelId
-                        );
-                        if (!channel) {
+                    try {
+                        // get level up channel
+                        let channel;
+                        if (config.levelChannelId === "") channel = message.channel;
+                        else
+                            channel = message.guild.channels.cache.find(
+                                (c) => c.id === config.levelChannelId
+                            );
+                        if (!channel)
                             return console.log(
                                 `[GUILD] Could not find level channel for ${message.guild.name}`
                             );
-                        }
+                        // create level up embed
                         const embed = new EmbedBuilder()
                             .setColor(message.member.displayHexColor)
                             .setDescription(
                                 `${message.member} has leveled up to ${userdata.level}`
                             );
-                        channel.send({ embeds: [embed] });
+                        // check if any rank roles are configured
+                        if (config.rankRoles.length !== 0) {
+                            for (let i = 0; i < config.rankRoles.length; i++) {
+                                // check if one of the rank roles are matched
+                                if (config.rankRoles[i].level === userdata.level) {
+                                    const roleId = config.rankRoles[i].role;
+                                    const role = message.guild.roles.cache.get(roleId);
+                                    const removeRoleId = config.rankRoles[i - 1].role;
+                                    removeRole(removeRoleId, message);
+                                    await message.member.roles.add(role);
+                                    embed
+                                        .setAuthor({
+                                            name: message.author.username,
+                                            iconURL: message.author.avatarURL(),
+                                        })
+                                        .setColor(role.hexColor)
+                                        .setTitle(
+                                            `Congratulations ${message.author.username}, you are now level ${userdata.level} and have become ${role.name}!`
+                                        )
+                                        .setDescription(null);
+                                    if (config.rankRoles[i].img !== "") {
+                                        embed.setImage(config.rankRoles[i].img);
+                                    }
+                                    await userdata.save();
+                                    return await channel.send({
+                                        content: `${message.author}`,
+                                        embeds: [embed],
+                                    });
+                                }
+                            }
+                            // if no rank levels are matched, send normal embed
+                            channel.send({ embeds: [embed] });
+                        } else {
+                            // if no ranks are configured, just send level up message
+                            channel.send({ embeds: [embed] });
+                        }
+                    } catch (error) {
+                        console.log(`[MESSAGE CREATE] Error sending level embed ${error}`.red);
                     }
                 }
                 // checks if economy system is enabled and if yes, adds currency as well

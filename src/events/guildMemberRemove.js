@@ -9,8 +9,8 @@ module.exports = {
     name: "guildMemberRemove",
     async execute(member, client) {
         if (member.bot) return;
-        await ProfileModel.deleteMany({ guildId: member.guild.id, userId: member.id });
-        const guildconfig = await guildConfiguration.findOne({ guildId: member.guild.id });
+        //await ProfileModel.deleteMany({ guildId: member.guild.id, userId: member.id });
+        const guildconfig = await client.configs.get(member.guild.id);
         if (!guildconfig) return;
         if (guildconfig.welcomeChannelId !== "") {
             const guild = member.guild;
