@@ -52,7 +52,7 @@ module.exports = {
             return;
         } else {
             return interaction.reply({
-                content: "The Leveling system is disabled in this server",
+                content: "The leveling system is disabled in this server",
                 ephemeral: true,
             });
         }

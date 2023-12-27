@@ -26,7 +26,7 @@ module.exports = {
         const icon = target.displayAvatarURL();
         const tag = target.username;
         const data = await ProfileModel.findOne({ guildId: guild.id, userId: target.id });
-        const color = interaction.member.displayHexColor;
+        const color = member.displayHexColor;
         const embed = new EmbedBuilder()
             .setAuthor({ name: tag, iconURL: icon })
             .setFooter({ text: `User ID: ${target.id}` })

@@ -6,11 +6,8 @@ const {
     PermissionFlagsBits,
 } = require("discord.js");
 const guildConfiguration = require("../../models/guildConfiguration");
-function attachIsImage(msgAttach) {
-    var url = msgAttach.contentType;
-    const acceptedImageTypes = ["image/gif", "image/jpeg", "image/png"];
-    //True if this url is a png image.
-    return acceptedImageTypes.includes(url);
+function attachIsImage(url) {
+    return /\.(jpg|jpeg|png|webp|avif|gif)$/.test(url);
 }
 
 module.exports = {
@@ -434,10 +431,8 @@ module.exports = {
                         .setDescription("The role a user gets when achieving the rank")
                         .setRequired(true)
                 )
-                .addAttachmentOption((option) =>
-                    option
-                        .setName("img")
-                        .setDescription("optional img sent with message when achieving rank(.png)")
+                .addStringOption((option) =>
+                    option.setName("img").setDescription("Provide a valid img url link")
                 )
         )
         .addSubcommand((subcommand) =>
@@ -791,7 +786,7 @@ module.exports = {
         if (subcommand === "set-rank") {
             const level = options.getInteger("level");
             const role = options.getRole("role");
-            const img = options.getAttachment("img") || "";
+            const img = options.getString("img") || "";
             for (let i = 0; i < data.rankRoles.length; i++) {
                 if (level === data.rankRoles[i].level)
                     return await interaction.reply({
@@ -809,15 +804,20 @@ module.exports = {
             let image = "";
             if (img !== "") {
                 if (attachIsImage(img)) {
-                    image = img.url;
+                    image = img;
                 } else {
                     return await interaction.reply({
-                        content: "This attachment is invalid",
+                        content:
+                            "This img is invalid (The link must end with jpg/png/webp etc...)\n*Extra hint: If you are using imgur links, you can simply add a .jpg or .png after your url*",
                         ephemeral: true,
                     });
                 }
             }
-            const newRank = { level: level, role: role.id, img: image };
+            if (image !== "") {
+                image +=
+                    "\n*Please note that the image checker is currently extremely basic, if discord did not load the link in this message please remove the rank and try with another url*";
+            }
+            const newRank = { level: level, role: role.id, img: img };
             data.rankRoles.push(newRank);
             await data.save();
             await client.configs.set(guild.id, data);

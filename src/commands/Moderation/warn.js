@@ -45,7 +45,7 @@ module.exports = {
                     return console.log(`[BOT] Error with automated timeout: ${err}`.red);
                 });
             const newInfractionObject = {
-                IssuerId: "Asir",
+                IssuerId: `${client.user.id}`,
                 IssuerTag: "Asir",
                 Reason: "Automated timeout",
                 Date: Date.now(),
