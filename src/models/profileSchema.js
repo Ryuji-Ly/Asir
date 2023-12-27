@@ -66,6 +66,10 @@ const profileSchema = new mongoose.Schema({
         type: Array,
         default: [],
     },
+    voted: {
+        type: Number,
+        default: 0,
+    },
 });
 
 const model = mongoose.model("userdatabase", profileSchema);
