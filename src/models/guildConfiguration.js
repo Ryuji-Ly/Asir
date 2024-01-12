@@ -132,6 +132,14 @@ const guildConfigurationSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    cooldowns: {
+        type: Array,
+        default: [],
+    },
+    defaultMinigameCooldown: {
+        type: Number,
+        default: 1000 * 60 * 3,
+    },
     // Economy stuff
     currencyName: {
         type: String,

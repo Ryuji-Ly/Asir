@@ -70,6 +70,18 @@ const profileSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    mentions: {
+        type: Array,
+        default: [],
+    },
+    gamesWon: {
+        type: Array,
+        default: [],
+    },
+    gambleStats: {
+        type: Array,
+        default: [],
+    },
 });
 
 const model = mongoose.model("userdatabase", profileSchema);
