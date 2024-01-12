@@ -24,8 +24,10 @@ module.exports = {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
         const target = options.getUser("user");
+        await interaction.deferReply();
         if (target) {
-            if (target.bot) return interaction.reply({ content: "This is a bot", ephemeral: true });
+            if (target.bot)
+                return interaction.editReply({ content: "This is a bot", ephemeral: true });
             const data = await ProfileModel.findOne({ guildId: guild.id, userId: target.id });
             const embed = new EmbedBuilder()
                 .setAuthor({
@@ -49,7 +51,7 @@ module.exports = {
                         .join("\n\n")}`
                 );
             }
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
         } else {
             const alldata = await ProfileModel.find({ guildId: guild.id }).select(
                 "-_id userId warnings infractions"
@@ -67,7 +69,7 @@ module.exports = {
                 .setColor("Blurple")
                 .setTimestamp()
                 .setDescription(`${string}`);
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
         }
         return;
     },
