@@ -7,6 +7,7 @@ const {
     ButtonBuilder,
 } = require("discord.js");
 const profileModel = require("../../models/profileSchema");
+const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -45,7 +46,8 @@ module.exports = {
         const gambleCommand = options.getSubcommand();
         const data = await profileModel.findOne({ userId: user.id, guildId: guild.id });
         const gambleEmbed = new EmbedBuilder().setColor(0x00aa6d);
-        if (!config.Level) return;
+        if (config.Economy === false)
+            return interaction.reply({ content: "Economy is disabled", ephemeral: true });
         if (gambleCommand === "three-doors") {
             const amount = options.getInteger("amount");
 
