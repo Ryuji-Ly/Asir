@@ -1,5 +1,3 @@
-var colors = require("colors");
-colors.enable();
 const { ActivityType } = require("discord.js");
 
 module.exports = {

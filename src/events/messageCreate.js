@@ -64,16 +64,15 @@ module.exports = {
                 const groupCategory = message.guild.channels.cache.get(config.groupCategoryId);
                 let groupChannels = [];
                 if (groupCategory) groupChannels = groupCategory.children.cache.map((c) => c.id);
-                let groupbonus = 0;
+                let groupbonus = 1;
                 let groupmulti = 0;
                 const group = await GroupModel.findOne({ groupMemberIds: message.author.id });
                 if (group) groupmulti = group.groupMultiplier;
                 if (groupChannels.includes(message.channel.id))
                     groupbonus = config.groupChannelMulti;
                 const xpToGive = getRandomXp(config.randomXpMin, config.randomXpMax);
-                const finalMulti = userdata.multiplier + groupbonus + groupmulti;
-                const finalXp = Math.floor(xpToGive * finalMulti);
-                userdata.xp += finalXp;
+                const finalXp = Math.floor(xpToGive * groupbonus);
+                userdata.xp += xpToGive;
                 // all the increase level or not logic
                 let levelRequirement = 0;
                 if (config.xpScaling === "constant") {
@@ -112,8 +111,10 @@ module.exports = {
                                 if (config.rankRoles[i].level === userdata.level) {
                                     const roleId = config.rankRoles[i].role;
                                     const role = message.guild.roles.cache.get(roleId);
-                                    const removeRoleId = config.rankRoles[i - 1].role;
-                                    removeRole(removeRoleId, message);
+                                    if (i !== 0) {
+                                        const removeRoleId = config.rankRoles[i - 1].role;
+                                        removeRole(removeRoleId, message);
+                                    }
                                     await message.member.roles.add(role);
                                     embed
                                         .setAuthor({
@@ -142,7 +143,9 @@ module.exports = {
                             channel.send({ embeds: [embed] });
                         }
                     } catch (error) {
-                        console.log(`[MESSAGE CREATE] Error sending level embed ${error}`.red);
+                        console.log(
+                            `[MESSAGE CREATE] Error sending level embed ${error.stack}`.red
+                        );
                     }
                 }
                 // checks if economy system is enabled and if yes, adds currency as well
