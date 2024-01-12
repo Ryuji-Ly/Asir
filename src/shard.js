@@ -24,11 +24,13 @@ manager.on("shardCreate", (shard) => {
         console.log(`[SHARDING MANAGER] Shard died: [${shard.id}]`.red);
     });
     shard.on("error", (err) => {
-        console.log(`[SHARDING MANAGER] Error in Shard [${shard.id}] with : ${err}`.red);
+        console.log(`[SHARDING MANAGER] Error in Shard [${shard.id}] with : ${err.stack}`.red);
         shard.respawn();
     });
 });
 
 manager
     .spawn({ amount: "auto", delay: 5500, timeout: 30000 })
-    .catch((e) => console.log(`[SHARDING MANAGER] Error spawning SHARDING MANAGER: ${e}`.red));
+    .catch((e) =>
+        console.log(`[SHARDING MANAGER] Error spawning SHARDING MANAGER: ${e.stack}`.red)
+    );

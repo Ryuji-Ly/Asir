@@ -15,6 +15,10 @@ const fs = require("fs");
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildIntegrations,
+        GatewayIntentBits.GuildScheduledEvents,
+        GatewayIntentBits.GuildWebhooks,
+        GatewayIntentBits.GuildMessageTyping,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildPresences,
@@ -27,8 +31,6 @@ const client = new Client({
     ],
 });
 const mongoose = require("mongoose");
-var colors = require("colors");
-colors.enable();
 
 client.commands = new Collection();
 client.configs = new Collection();
@@ -66,6 +68,8 @@ mongoose
 
 process.on("unhandledRejection", (reason, promise) => {
     console.log(
-        `[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason: ${reason}`.red
+        `[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason: ${reason}\n${new Date(
+            Date.now()
+        )}`.red
     );
 });
