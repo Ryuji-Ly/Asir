@@ -18,6 +18,7 @@ module.exports = {
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
+        await interaction.deferReply();
         const userData = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
         let data = await ProfileModel.find({ guildId: guild.id }).select(
             "-_id userId messageCounter"
@@ -47,7 +48,7 @@ module.exports = {
             desc += `**${i + 1}.** ${user}**: ${messagecount} messages**\n`;
         }
         embed.setDescription(desc);
-        interaction.reply({ embeds: [embed] });
+        interaction.editReply({ embeds: [embed] });
         return;
     },
 };

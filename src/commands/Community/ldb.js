@@ -19,6 +19,7 @@ module.exports = {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
         if (config.Level) {
+            await interaction.deferReply();
             const userData = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
             let data = await ProfileModel.find({ guildId: guild.id }).select(
                 "-_id userId xp level"
@@ -48,7 +49,7 @@ module.exports = {
                 desc += `**${i + 1}.** ${user}: **level** **${userLevel}**\n`;
             }
             embed.setDescription(desc);
-            await interaction.reply({ embeds: [embed] });
+            await interaction.editReply({ embeds: [embed] });
             return;
         } else {
             return interaction.reply({

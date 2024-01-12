@@ -25,6 +25,7 @@ module.exports = {
         const member = await guild.members.fetch(target.id);
         const icon = target.displayAvatarURL();
         const tag = target.username;
+        await interaction.deferReply();
         const data = await ProfileModel.findOne({ guildId: guild.id, userId: target.id });
         const color = member.displayHexColor;
         const embed = new EmbedBuilder()
@@ -85,7 +86,7 @@ module.exports = {
                 inline: true,
             }
         );
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [embed],
         });
         return;

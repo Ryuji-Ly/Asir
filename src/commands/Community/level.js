@@ -24,10 +24,11 @@ module.exports = {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
         if (config.Level) {
+            await interaction.deferReply();
             let target = options.getUser("user");
             if (!target) target = user;
             const targetObj = await guild.members.fetch(target.id);
-            const data = await ProfileModel.findOne({ userId: user.id, guildId: guild.id });
+            const data = await ProfileModel.findOne({ userId: target.id, guildId: guild.id });
             let allLevels = await ProfileModel.find({ guildId: guild.id }).select(
                 "-_id userId level xp"
             );
@@ -58,7 +59,7 @@ module.exports = {
                 .setStatus(targetObj.presence ? targetObj.presence.status : "offline");
             const img = await rank.build();
             const attachment = new AttachmentBuilder(img);
-            await interaction.reply({ files: [attachment] });
+            await interaction.editReply({ files: [attachment] });
         } else {
             await interaction.reply({
                 content: "The leveling function is disabled in this server",
