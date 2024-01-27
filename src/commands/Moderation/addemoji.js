@@ -48,7 +48,7 @@ module.exports = {
                 .catch((err) => {
                     return "png";
                 });
-            emoji = `https://cdn.discordapp.com/emojis/${id}.${type}?wuality=lossless`;
+            emoji = `https://cdn.discordapp.com/emojis/${id}.${type}?quality=lossless`;
         }
         if (!emoji.startsWith("http")) {
             return await interaction.reply({
