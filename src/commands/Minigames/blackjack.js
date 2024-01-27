@@ -3,9 +3,11 @@ const {
     Interaction,
     EmbedBuilder,
     PermissionFlagsBits,
+    ButtonBuilder,
+    ButtonStyle,
+    ActionRowBuilder,
 } = require("discord.js");
 const ProfileModel = require("../../models/profileSchema");
-const parseMilliseconds = require("parse-ms-2");
 const handleCooldowns = require("../../utils/handleCooldowns");
 const cards = {
     C2: "<:2C:1192958731370102835>",
@@ -62,10 +64,195 @@ const cards = {
     SA: "<:AS:1192962549080133653>",
 };
 
+class BlackjackGame {
+    constructor(interaction, client) {
+        this.interaction = interaction;
+        this.client = client;
+        this.deck = this.generateDeck();
+        this.playerHand = [];
+        this.dealerHand = [];
+        this.playerScore = 0;
+        this.dealerScore = 0;
+        this.gameOver = false;
+    }
+    generateDeck() {
+        const suits = ["C", "H", "D", "S"];
+        const ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+        const deck = [];
+        for (const suit of suits) {
+            for (const rank of ranks) {
+                deck.push(`${suit}${rank}`);
+            }
+        }
+        return deck;
+    }
+    shuffleDeck() {
+        for (let i = this.deck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.deck[i], this.deck[j]] = [this.deck[j], this.deck[i]];
+        }
+    }
+    dealCard() {
+        return this.deck.pop();
+    }
+    async startGame() {
+        this.shuffleDeck();
+        this.playerHand = [this.dealCard(), this.dealCard()];
+        this.dealerHand = [this.dealCard(), this.dealCard()];
+        this.calculateScores();
+        const playerHandString = this.playerHand.map((card) => cards[card]).join(" ");
+        const dealerHandString = this.dealerHand.map((card) => cards[card]).join(" ");
+        let desc = `**Your Hand:** ${playerHandString}\n**Dealer's Hand:** ${dealerHandString}`;
+        const embed = new EmbedBuilder()
+            .setColor("Purple")
+            .setTitle("Blackjack")
+            .addFields(
+                { name: "Your Score:", value: `${this.playerScore}`, inline: true },
+                { name: "Dealer's Score:", value: `${this.dealerScore}`, inline: true }
+            );
+        const hitButton = new ButtonBuilder()
+            .setCustomId("blackjack_hit")
+            .setLabel("Hit")
+            .setStyle(ButtonStyle.Primary);
+        const standButton = new ButtonBuilder()
+            .setCustomId("blackjack_stand")
+            .setLabel("Stand")
+            .setStyle(ButtonStyle.Primary);
+        const row = new ActionRowBuilder().addComponents(hitButton, standButton);
+        embed.setDescription(desc);
+        const msg = await this.interaction.editReply({ embeds: [embed], components: [row] });
+        this.handleButtons(msg);
+    }
+    calculateScores() {
+        this.playerScore = this.calculateHandScore(this.playerHand);
+        this.dealerScore = this.calculateHandScore(this.dealerHand);
+    }
+    calculateHandScore(hand) {
+        let score = 0;
+        let hasAce = false;
+        for (const card of hand) {
+            const rank = card.substring(1);
+            if (rank === "A") {
+                hasAce = true;
+                score += 11;
+            } else if (["K", "Q", "J"].includes(rank)) {
+                score += 10;
+            } else {
+                score += parseInt(rank, 10);
+            }
+        }
+        // Adjust for Aces
+        while (score > 21 && hasAce) {
+            score -= 10;
+            hasAce = false;
+        }
+        return score;
+    }
+    async hit(msg) {
+        if (this.gameOver) return;
+        const card = this.dealCard();
+        this.playerHand.push(card);
+        this.calculateScores();
+        if (this.playerScore > 21) {
+            await this.endGame(msg);
+        } else {
+            await this.sendGameEmbed(msg);
+        }
+    }
+    async stand(msg) {
+        if (this.gameOver) return;
+        while (this.dealerScore < 17) {
+            this.dealerHand.push(this.dealCard());
+            this.calculateScores();
+        }
+        await this.endGame(msg);
+    }
+    async endGame(msg) {
+        this.gameOver = true;
+        await this.sendGameEmbed(msg);
+    }
+    handleButtons(msg) {
+        const collector = msg.createMessageComponentCollector({ idle: 1000 * 60 * 5 });
+        collector.on("collect", async (btn) => {
+            await btn.deferUpdate().catch((e) => {});
+            if (btn.user.id !== this.interaction.user.id) {
+                btn.followUp({ content: `Not your buttons.`, ephemeral: true });
+                return;
+            }
+            if (btn.customId.split("_")[1] === "hit") {
+                await this.hit(msg);
+            } else if (btn.customId.split("_")[1] === "stand") {
+                await this.stand(msg);
+            }
+        });
+    }
+    async sendGameEmbed(msg) {
+        const playerHandString = this.playerHand.map((card) => cards[card]).join(" ");
+        const dealerHandString = this.dealerHand.map((card) => cards[card]).join(" ");
+        let desc = `**Your Hand:** ${playerHandString}\n**Dealer's Hand:** ${dealerHandString}`;
+        const embed = new EmbedBuilder()
+            .setColor("Purple")
+            .setTitle("Blackjack")
+            .addFields(
+                { name: "Your Score:", value: `${this.playerScore}`, inline: true },
+                { name: "Dealer's Score:", value: `${this.dealerScore}`, inline: true }
+            );
+        if (this.gameOver) {
+            desc += `\n\nGame Over! ${this.determineWinner()}`;
+            const config = await this.client.configs.get(this.interaction.guild.id);
+            if (config.Economy) {
+                const bet = this.interaction.options.getInteger("bet");
+                let change = 0;
+                if (bet) {
+                    const data = await ProfileModel.findOne({
+                        userId: this.interaction.user.id,
+                        guildId: this.interaction.guild.id,
+                    });
+                    if (
+                        this.determineWinner() === "Dealer busted! You win." ||
+                        this.determineWinner() === "You win!"
+                    ) {
+                        data.balance += bet * 3;
+                        change = bet * 3;
+                        await data.save();
+                    } else if (this.determineWinner() === "It's a tie!") {
+                    } else {
+                        data.balance -= bet;
+                        change = -bet;
+                        await data.save();
+                    }
+                }
+                embed.setFooter({ text: `You gambled and got ${change} ${config.currencyName}` });
+            }
+        }
+        embed.setDescription(desc);
+        msg.edit({ embeds: [embed] });
+    }
+    determineWinner() {
+        if (this.playerScore > 21) {
+            return "You busted! Dealer wins.";
+        } else if (this.dealerScore > 21) {
+            return "Dealer busted! You win.";
+        } else if (this.playerScore > this.dealerScore) {
+            return "You win!";
+        } else if (this.playerScore < this.dealerScore) {
+            return "Dealer wins.";
+        } else {
+            return "It's a tie!";
+        }
+    }
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("blackjack")
-        .setDescription("Play a game of Blackjack!"),
+        .setDescription("Play a game of Blackjack!")
+        .addIntegerOption((option) =>
+            option
+                .setName("bet")
+                .setDescription("Make a bet, if you win, you get triple your gamble")
+                .setMinValue(100)
+        ),
     /**
      *
      *
@@ -74,13 +261,24 @@ module.exports = {
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
+        const bet = options.getInteger("bet");
+        if (bet && !config.Economy)
+            return interaction.reply({ content: "Economy is disabled", ephemeral: true });
+        const data = await ProfileModel.findOne({ userId: user.id, guildId: guild.id });
+        if (data.balance < bet)
+            return interaction.reply({
+                content: `You do not have enough ${config.currencyName}`,
+                ephemeral: true,
+            });
         let cooldown = 0;
         if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
             cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
-        } else cooldown = 0;
+        } else cooldown = 1000 * 60;
         const cd = await handleCooldowns(interaction, cooldown);
         if (cd === false) return;
-        interaction.reply({ content: "This command is still under development", ephemeral: true });
+        await interaction.deferReply();
+        const blackjack = new BlackjackGame(interaction, client);
+        blackjack.startGame();
         return;
     },
 };

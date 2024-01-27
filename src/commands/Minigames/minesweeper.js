@@ -170,8 +170,8 @@ module.exports = {
                     if (bet) {
                         winnings += Math.round(bet * multi);
                     }
-                    if (mines === 0) winnings = 0;
-                    else if (mines < 5) winnings * 0.2;
+                    if (mines === 1) winnings = 0;
+                    else if (mines < 5) winnings * 0.1;
                     else if (mines < 10) winnings * 2;
                     else winnings * 5;
                     data.balance += winnings;
