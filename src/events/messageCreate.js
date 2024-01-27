@@ -9,9 +9,12 @@ function getRandomXp(min, max) {
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-async function removeRole(roleId, message) {
-    const role = message.guild.roles.cache.get(roleId);
-    await message.member.roles.remove(role);
+async function removeRole(config, message) {
+    for (let i = 0; i < config.rankRoles.length; i++) {
+        const roleId = config.rankRoles[i].role;
+        const role = message.guild.roles.cache.get(roleId);
+        await message.member.roles.remove(role);
+    }
 }
 
 module.exports = {
@@ -40,6 +43,12 @@ module.exports = {
             user.messageCounter += 1;
             await user.save();
         } catch (error) {
+            const newUser = await ProfileModel.create({
+                guildId: message.guild.id,
+                userId: message.author.id,
+            });
+            newUser.messageCounter = 1;
+            await newUser.save();
             console.log(`[MESSAGE CREATE] No user data found to update message counter`.red);
         }
         //if no user, create new user
@@ -112,8 +121,7 @@ module.exports = {
                                     const roleId = config.rankRoles[i].role;
                                     const role = message.guild.roles.cache.get(roleId);
                                     if (i !== 0) {
-                                        const removeRoleId = config.rankRoles[i - 1].role;
-                                        removeRole(removeRoleId, message);
+                                        await removeRole(config, message);
                                     }
                                     await message.member.roles.add(role);
                                     embed

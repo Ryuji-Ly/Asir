@@ -3,6 +3,39 @@ const ProfileModel = require("../models/profileSchema");
 const whitelist = ["348902272534839296"];
 var colors = require("colors");
 colors.enable();
+const mapTypes = {
+    plains: 0,
+    lake: 1,
+    mansion: 2,
+    forest: 3,
+    treasureChest: 4,
+    cave: 5,
+    tower: 6,
+    portal: 7,
+    healingFountain: 8,
+    cartographerDesk: 9,
+    enchantedGarden: 10,
+};
+const items = [
+    { name: "Sword", value: 0 },
+    { name: "Bow", value: 1 },
+    { name: "Shield", value: 2 },
+    { name: "Binoculors", value: 3 },
+    { name: "Trap Disarm Kit", value: 4 },
+    { name: "Medical Kit", value: 5 },
+    { name: "Terrain Changer Orb", value: 6 },
+    { name: "Terrain Destroyer Crystal", value: 7 },
+    { name: "Terrain Swapper Amulet", value: 8 },
+    { name: "Map", value: 9 },
+    { name: "Divine Intervention Scroll", value: 10 },
+    { name: "Serenity Pearl", value: 11 },
+    { name: "Revenge Rune", value: 12 },
+    { name: "Divine Shield", value: 13 },
+    { name: "Lifesteal Dagger", value: 14 },
+    { name: "Fate Shifter Amulet", value: 15 },
+    { name: "Celestial Beacon", value: 16 },
+    { name: "Phoenix Feather", value: 17 },
+];
 
 module.exports = {
     name: "interactionCreate",
@@ -14,6 +47,14 @@ module.exports = {
      */
     async execute(interaction, client) {
         const config = await client.configs.get(interaction.guild.id);
+        // //Forever buttons
+        // try {
+        //     if (interaction.isButton()) {
+        //         //
+        //     }
+        // } catch (error) {
+        //     console.log(`[INTERACTION CREATE] Error with buttons ${error}`.red);
+        // }
         //autocomplete options
         try {
             if (interaction.isAutocomplete()) {
@@ -70,10 +111,16 @@ module.exports = {
                         });
                 }
             }
-            const data = await ProfileModel.findOne({
+            let data = await ProfileModel.findOne({
                 guildId: interaction.guild.id,
                 userId: interaction.user.id,
             });
+            if (!data) {
+                data = await ProfileModel.create({
+                    guildId: interaction.guild.id,
+                    userId: interaction.user.id,
+                });
+            }
             if (!interaction.isCommand()) return;
             //checking if command is disabled
             if (config.disabledCommands.includes(interaction.commandName)) {
