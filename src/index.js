@@ -8,6 +8,7 @@ const {
     Embed,
     ActivityType,
     Collection,
+    WebhookClient,
 } = require(`discord.js`);
 const { ImgurClient } = require("imgur");
 const GuildConfig = require("./models/guildConfiguration");
@@ -68,8 +69,24 @@ mongoose
 
 process.on("unhandledRejection", (reason, promise) => {
     console.log(
-        `[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason: ${reason}\n${new Date(
-            Date.now()
-        )}`.red
+        `[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason: ${
+            reason.stack
+        }\n${new Date(Date.now())}`.red
+    );
+});
+
+process.on("uncaughtException", (error, origin) => {
+    console.log(
+        `[BOT] Uncaught Exception at ${origin}\n[BOT] Uncaught Exception error: ${
+            error.stack
+        }\n${new Date(Date.now())}`.red
+    );
+});
+
+process.on("uncaughtExceptionMonitor", (error, origin) => {
+    console.log(
+        `[BOT] Uncaught Exception Monitor at ${origin}\n[BOT] Uncaught Exception Monitor error: ${
+            error.stack
+        }\n${new Date(Date.now())}`.red
     );
 });
