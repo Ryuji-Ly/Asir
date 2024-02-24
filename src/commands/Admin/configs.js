@@ -5,6 +5,7 @@ const {
     PermissionFlagsBits,
 } = require("discord.js");
 const ProfileModel = require("../../models/profileSchema");
+const parseMilliseconds = require("parse-ms-2");
 
 module.exports = {
     data: new SlashCommandBuilder()

@@ -35,6 +35,7 @@ module.exports = {
         let mergedPos = [];
         let score = 0;
         const chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+        const winChars = "bcdefghijklmnopqrstuvwxyz";
         //initialize gameboard
         for (let y = 0; y < 4; y++) {
             for (let x = 0; x < 4; x++) {
@@ -153,13 +154,22 @@ module.exports = {
             return boardFull && numMoves === 0;
         };
         const gameOver = async (msg, result) => {
+            let multi = 0.2;
+            if (result === true) multi = 5;
+            const winnings = Math.floor(score * multi);
+            const data = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
+            data.balance += winnings;
+            await data.save();
+            let string = "";
+            if (result === true)
+                string = `Congratulations! You have won ${winnings} ${config.currencyName}!`;
+            else
+                string = `You have lost... You still win ${winnings} ${config.currencyName} though.`;
             const embed = new EmbedBuilder()
                 .setTitle("2048")
                 .setColor("Purple")
                 .setImage("attachment://2048.png")
-                .setDescription(
-                    "... This took a long time ok, wait a bit before I start adding the currency stuff"
-                )
+                .setDescription(string)
                 .addFields(
                     { name: "Total Score", value: score.toString() },
                     { name: "Result", value: `${result === true ? "Win." : "Lose."}` }
@@ -205,8 +215,8 @@ module.exports = {
             });
             collector.on("end", (_, reason) => {
                 if (reason === "idle" || reason === "user") {
-                    console.log(gameBoard);
-                    return gameOver(msg, gameBoard.includes("b"));
+                    const boardString = [...gameBoard].some((char) => winChars.includes(char));
+                    return gameOver(msg, boardString);
                 }
             });
         };

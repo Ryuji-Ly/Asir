@@ -46,7 +46,17 @@ module.exports = {
      * @returns
      */
     async execute(interaction, client) {
+        if (!interaction.inGuild())
+            return interaction.reply({
+                content: "You cannot use commands outside of servers.",
+                ephemeral: true,
+            });
         const config = await client.configs.get(interaction.guild.id);
+        if (interaction.guildId === "1161001645698715698")
+            return interaction.reply({
+                content: "All commands are temporarily disabled.",
+                ephemeral: true,
+            });
         // //Forever buttons
         // try {
         //     if (interaction.isButton()) {

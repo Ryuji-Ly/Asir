@@ -8,6 +8,7 @@ const {
     ActionRowBuilder,
 } = require("discord.js");
 const ProfileModel = require("../../models/profileSchema");
+const TwoZeroFourEight = require("discord-gamecord/src/2048");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -26,10 +27,11 @@ module.exports = {
             .setTitle(`Vote`)
             .setColor(interaction.member.displayHexColor)
             .setDescription(
-                `If you are in the server **Lectorum Nexus**, by voting you will gain the role **Voter**.\nThe role allows you to send embed links and attachments in the general channel.\n\nIf this command is being used in a different server, there are currently no benefits however they will come soon.`
+                "top.gg has discontinued server listing as of 2/5/2024. Voting has hence been disabled and the command will be removed soon."
             );
         const button = new ButtonBuilder()
             .setLabel("Vote")
+            .setDisabled(true)
             .setStyle(ButtonStyle.Link)
             .setURL("https://top.gg/servers/1161001645698715698/vote");
         const join = new ButtonBuilder()

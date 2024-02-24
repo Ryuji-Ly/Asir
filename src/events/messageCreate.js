@@ -49,7 +49,10 @@ module.exports = {
             });
             newUser.messageCounter = 1;
             await newUser.save();
-            console.log(`[MESSAGE CREATE] No user data found to update message counter`.red);
+            console.log(
+                `[MESSAGE CREATE] No user data found to update message counter. ${message.author.username}`
+                    .red
+            );
         }
         //if no user, create new user
         if (!user) {
@@ -59,6 +62,63 @@ module.exports = {
             });
             return await newUser.save();
         }
+        // try {
+        //     const channels = ["1197517807676567652"];
+        //     if (message.author.bot) return;
+        //     if (
+        //         !channels.includes(message.channelId) &&
+        //         !message.mentions.users.has(client.user.id)
+        //     )
+        //         return;
+        //     message.channel.sendTyping();
+        //     const sendTyping = setInterval(() => {
+        //         message.channel.sendTyping();
+        //     }, 5000);
+        //     let conversation = [];
+        //     let prevMessages = await message.channel.messages.fetch({ limit: 10 });
+        //     prevMessages.reverse();
+        //     prevMessages.forEach((msg) => {
+        //         if (msg.author.bot && msg.author.id !== client.user.id) return;
+        //         const username = msg.author.username.replace(/\s+/g, "_").replace(/[^\w\s]/gi, "");
+        //         if (message.author.id === client.user.id) {
+        //             conversation.push({
+        //                 role: "assistant",
+        //                 name: username,
+        //                 content: msg.content,
+        //             });
+        //             return;
+        //         }
+        //         conversation.push({
+        //             role: "user",
+        //             name: username,
+        //             content: msg.content,
+        //         });
+        //     });
+        //     conversation.push({ role: "system", content: "Chat GPT is a friendly chatbot." });
+        //     const response = await openai.chat.completions
+        //         .create({
+        //             model: "gpt-3.5-turbo",
+        //             messages: conversation,
+        //         })
+        //         .catch((error) => {
+        //             console.log("[OpenAI] Error".red);
+        //         });
+        //     clearInterval(sendTyping);
+        //     if (!response) {
+        //         message.reply(
+        //             `There has been an error with the OpenAI API, please try again later.`
+        //         );
+        //         return;
+        //     }
+        //     const responseMsg = response.choices[0].message.content;
+        //     const chunkSizeLimit = 2000;
+        //     for (let i = 0; i < responseMsg.length; i += chunkSizeLimit) {
+        //         const chunk = responseMsg.substring(i, i + chunkSizeLimit);
+        //         await message.reply(chunk);
+        //     }
+        // } catch (error) {
+        //     console.log(`[MESSAGE CREATE] Error with ChatGPT: ${error}`.red);
+        // }
         // leveling logic
         try {
             //checks if leveling is enabled
@@ -120,10 +180,6 @@ module.exports = {
                                 if (config.rankRoles[i].level === userdata.level) {
                                     const roleId = config.rankRoles[i].role;
                                     const role = message.guild.roles.cache.get(roleId);
-                                    if (i !== 0) {
-                                        await removeRole(config, message);
-                                    }
-                                    await message.member.roles.add(role);
                                     embed
                                         .setAuthor({
                                             name: message.author.username,
@@ -138,10 +194,15 @@ module.exports = {
                                         embed.setImage(config.rankRoles[i].img);
                                     }
                                     await userdata.save();
-                                    return await channel.send({
+                                    await channel.send({
                                         content: `${message.author}`,
                                         embeds: [embed],
                                     });
+                                    if (i !== 0) {
+                                        await removeRole(config, message);
+                                    }
+                                    await message.member.roles.add(role);
+                                    return;
                                 }
                             }
                             // if no rank levels are matched, send normal embed

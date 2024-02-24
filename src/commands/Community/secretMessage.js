@@ -6,6 +6,7 @@ const {
     ButtonBuilder,
     ButtonStyle,
     ActionRowBuilder,
+    Client,
 } = require("discord.js");
 const ProfileModel = require("../../models/profileSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
@@ -30,18 +31,20 @@ module.exports = {
      *
      *
      * @param {Interaction} interaction
+     * @param {Client} client
      */
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
+        const target = options.getUser("user");
+        const secret = options.getString("message");
+        if (target.bot && target.id !== client.user.id) return;
         let cooldown = 0;
         if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
             cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
         } else cooldown = 0;
         const cd = await handleCooldowns(interaction, cooldown);
         if (cd === false) return;
-        const target = options.getUser("user");
-        const secret = options.getString("message");
         if (target.id === user.id) {
             await interaction.reply({
                 content: `You have sent a secret message to ${target} with the contents: ${secret}`,
@@ -72,6 +75,10 @@ module.exports = {
             embeds: [embed],
             components: [row],
         });
+        if (target.id === client.user.id) {
+            const channel = await interaction.guild.channels.fetch("1168986371092922418");
+            await channel.send(`${user.username} has sent a secret message to me:\n${secret}`);
+        }
         const collector = message.createMessageComponentCollector();
         collector.on("collect", async (i) => {
             const embed = new EmbedBuilder()
