@@ -19,6 +19,7 @@ module.exports = {
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
+        return interaction.reply({ content: "This command is being fixed.", ephemeral: true });
         const embed1 = new EmbedBuilder()
             .setAuthor({ name: user.username, iconURL: user.avatarURL() })
             .setTitle(`Displaying configurations of ${guild.name}`)

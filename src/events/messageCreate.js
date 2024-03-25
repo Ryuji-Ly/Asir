@@ -3,7 +3,7 @@ colors.enable();
 const ProfileModel = require("../models/profileSchema");
 const GroupModel = require("../models/group");
 const cooldown = new Set();
-const { EmbedBuilder, Message } = require("discord.js");
+const { EmbedBuilder, Message, WebhookClient } = require("discord.js");
 function getRandomXp(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
@@ -28,6 +28,7 @@ module.exports = {
     async execute(message, client) {
         if (message.author.bot) return;
         const config = await client.configs.get(message.guild.id);
+        const webhookClient = new WebhookClient({ url: process.env.discordWebhook });
         const chance = Math.floor(Math.random() * 1000000000001);
         if (chance < 1) {
             message.reply(`<:MafuyuWhat:1162493558180298893>`);
@@ -49,6 +50,15 @@ module.exports = {
             });
             newUser.messageCounter = 1;
             await newUser.save();
+            const embed = new EmbedBuilder()
+                .setColor("Red")
+                .setAuthor({ name: `[MESSAGE CREATE]` })
+                .setDescription(
+                    `\`\`\`ansi\n[0;31m[MESSAGE CREATE] Missing user data found for ${message.author.username} in ${message.guild.name}, unable to update message counter. New user data created.\`\`\``
+                );
+            webhookClient
+                .send({ embeds: [embed] })
+                .catch((e) => console.log(`[MESSAGE CREATE] Webhook failed to send`.red));
             console.log(
                 `[MESSAGE CREATE] No user data found to update message counter. ${message.author.username}`
                     .red
@@ -228,6 +238,15 @@ module.exports = {
                 }, 60 * 1000);
             }
         } catch (error) {
+            const embed = new EmbedBuilder()
+                .setColor("Red")
+                .setAuthor({ name: `[MESSAGE CREATE]` })
+                .setDescription(
+                    `\`\`\`ansi\n[0;31m[MESSAGE CREATE] Error updating levels for ${message.author.username} in ${message.guild.name}:\`\`\`\n \`\`\`ansi\n[0;31m${error}\`\`\``
+                );
+            webhookClient
+                .send({ embeds: [embed] })
+                .catch((e) => console.log(`[MESSAGE CREATE] Webhook failed to send`.red));
             console.log(`[MESSAGE CREATE] Error updating levels ${error}`.red);
         }
         return;

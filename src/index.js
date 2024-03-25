@@ -32,6 +32,7 @@ const client = new Client({
     ],
 });
 const mongoose = require("mongoose");
+const webhookClient = new WebhookClient({ url: process.env.discordWebhook });
 
 client.commands = new Collection();
 client.configs = new Collection();
@@ -42,24 +43,35 @@ const functions = fs.readdirSync("./src/functions").filter((file) => file.endsWi
 const eventFiles = fs.readdirSync("./src/events").filter((file) => file.endsWith(".js"));
 const commandFolders = fs.readdirSync("./src/commands");
 
-mongoose
-    .connect(process.env.database, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-    })
-    .then(() => {
-        console.log("[DATABASE] Connected to the database!".green);
-    })
-    .catch((err) => {
-        console.log(`[DATABASE] Error with connecting to database: ${err}`);
-    });
-
 (async () => {
     for (file of functions) {
         require(`./functions/${file}`)(client);
     }
     await client.handleEvents(eventFiles, "./src/events");
     await client.handleCommands(commandFolders, "./src/commands");
+    await mongoose
+        .connect(process.env.database, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        })
+        .then(() => {
+            const embed = new EmbedBuilder()
+                .setColor("Green")
+                .setAuthor({ name: `[DATABASE]` })
+                .setDescription(`\`\`\`ansi\n[0;32m[DATABASE] Connected to the database!\`\`\``);
+            webhookClient
+                .send({ embeds: [embed] })
+                .catch((e) => console.log(`[DATABASE] Webhook failed to send`.red));
+            console.log("[DATABASE] Connected to the database!".green);
+        })
+        .catch((err) => {
+            const embed = new EmbedBuilder()
+                .setColor("Red")
+                .setAuthor({ name: `[DATABASE]` })
+                .setDescription(`\`\`\`js\nError connecting to database:\n${err}\`\`\``);
+            webhookClient.send({ embeds: [embed] });
+            console.log(`[DATABASE] Error with connecting to database: ${err}`);
+        });
     await client.login(process.env.token);
     client.guilds.cache.forEach(async (guild) => {
         const data = await GuildConfig.findOne({ guildId: guild.id });
@@ -67,7 +79,15 @@ mongoose
     });
 })();
 
+const embed = new EmbedBuilder().setColor("Red").setAuthor({ name: `[BOT]` });
 process.on("unhandledRejection", (reason, promise) => {
+    let reasonString = reason instanceof Error ? reason.stack : String(reason);
+    embed.setDescription(
+        `\`\`\`ansi\n[0;31m[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason:\n${reasonString}\`\`\``
+    );
+    webhookClient
+        .send({ embeds: [embed] })
+        .catch((e) => console.log(`[BOT] Webhook failed to send`.red));
     console.log(
         `[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason: ${
             reason.stack
@@ -76,6 +96,13 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 process.on("uncaughtException", (error, origin) => {
+    let errorString = error instanceof Error ? error.stack : String(error);
+    embed.setDescription(
+        `\`\`\`ansi\n[0;31m[BOT] Uncaught Exception at ${origin}\n[BOT] Uncaught Exception error:\n${errorString}\`\`\``
+    );
+    webhookClient
+        .send({ embeds: [embed] })
+        .catch((e) => console.log(`[BOT] Webhook failed to send`.red));
     console.log(
         `[BOT] Uncaught Exception at ${origin}\n[BOT] Uncaught Exception error: ${
             error.stack
@@ -84,6 +111,13 @@ process.on("uncaughtException", (error, origin) => {
 });
 
 process.on("uncaughtExceptionMonitor", (error, origin) => {
+    let errorString = error instanceof Error ? error.stack : String(error);
+    embed.setDescription(
+        `\`\`\`ansi\n[0;31m[BOT] Uncaught Exception Monitor at ${origin}\n[BOT] Uncaught Exception Monitor error:\n${errorString}\`\`\``
+    );
+    webhookClient
+        .send({ embeds: [embed] })
+        .catch((e) => console.log(`[BOT] Webhook failed to send`.red));
     console.log(
         `[BOT] Uncaught Exception Monitor at ${origin}\n[BOT] Uncaught Exception Monitor error: ${
             error.stack

@@ -25,9 +25,9 @@ module.exports = {
         if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
             cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
         } else cooldown = 1000 * 60 * 60 * 24;
+        await interaction.deferReply();
         const cd = await handleCooldowns(interaction, cooldown);
         if (cd === false) return;
-        await interaction.deferReply();
         const data = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
         const usermultiplier = data.multiplier;
         const groupdata = await GroupModel.findOne({

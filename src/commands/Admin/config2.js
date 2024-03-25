@@ -466,6 +466,7 @@ module.exports = {
      */
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
+        return interaction.reply({ content: "This command is being fixed.", ephemeral: true });
         const subcommand = options.getSubcommand();
         const data = await guildConfiguration.findOne({ guildId: guild.id });
         if (subcommand === "add-restricted-channel") {

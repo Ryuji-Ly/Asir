@@ -42,12 +42,22 @@ const handleCooldowns = async (interaction, cooldown) => {
     const timeLeft = cooldown - (Date.now() - lastUsed);
     if (timeLeft > 0) {
         const { hours, minutes, seconds } = parseMilliseconds(timeLeft);
-        await interaction.reply({
-            content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
-                (Date.now() + timeLeft) / 1000
-            )}:R>`,
-            ephemeral: true,
-        });
+        await interaction
+            .reply({
+                content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
+                    (Date.now() + timeLeft) / 1000
+                )}:R>`,
+                ephemeral: true,
+            })
+            .catch(
+                async (e) =>
+                    await interaction.editReply({
+                        content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
+                            (Date.now() + timeLeft) / 1000
+                        )}:R>`,
+                        ephemeral: true,
+                    })
+            );
         return false;
     } else {
         await ProfileModel.findOneAndUpdate(

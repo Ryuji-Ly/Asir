@@ -2,6 +2,33 @@ var colors = require("colors");
 colors.enable();
 const ProfileModel = require("../models/profileSchema");
 const { EmbedBuilder } = require("discord.js");
+const axios = require("axios");
+async function checkImage(url) {
+    const res = await fetch(url);
+    const buff = await res.blob();
+
+    return buff.type.startsWith("image/");
+}
+const uploadImage = async (url) => {
+    try {
+        const response = await axios.post(
+            "https://api.imgur.com/3/image",
+            {
+                image: url,
+                type: "URL",
+            },
+            {
+                headers: {
+                    Authorization: `Client-ID ${process.env.client_id}`,
+                },
+            }
+        );
+        const imageUrl = response.data.data.link;
+        return imageUrl;
+    } catch {
+        return null;
+    }
+};
 
 module.exports = {
     name: "messageDelete",
@@ -40,7 +67,17 @@ module.exports = {
                     if (attachmentArray.length !== 0) {
                         let string = "";
                         for (let i = 0; i < attachmentArray.length; i++) {
-                            string += `${attachmentArray[i].name} - [View](${attachmentArray[i].url})\n`;
+                            if (checkImage(attachmentArray[i].url)) {
+                                await uploadImage(attachmentArray[i].url).then(async (imageUrl) => {
+                                    if (imageUrl === null) {
+                                        string += `${attachmentArray[i].name} - [View](${attachmentArray[i].url})\n`;
+                                    } else {
+                                        string += `${attachmentArray[i].name} - [View](${imageUrl})\n`;
+                                    }
+                                });
+                            } else {
+                                string += `${attachmentArray[i].name} - [View](${attachmentArray[i].url})\n`;
+                            }
                         }
                         embed
                             .addFields({
@@ -51,7 +88,9 @@ module.exports = {
                                 text: `ID: ${message.author.id}`,
                             });
                     }
-                    await channel.send({ embeds: [embed] });
+                    await channel.send({ embeds: [embed] }).catch((err) => {
+                        return;
+                    });
                     return;
                 }
             } else console.log(`[MESSAGE DELETE] Could not find message log channel`.red);

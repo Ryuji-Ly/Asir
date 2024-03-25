@@ -1,4 +1,4 @@
-const { ActivityType } = require("discord.js");
+const { ActivityType, WebhookClient, EmbedBuilder } = require("discord.js");
 
 module.exports = {
     name: "ready",
@@ -30,11 +30,12 @@ module.exports = {
         setInterval(async () => {
             client.user.setActivity(status[Math.floor(Math.random() * status.length)]);
         }, 1000 * 60);
-        // let month = Date.now();
-        // const months = 30 * 24 * 60 * 60 * 1000;
-        // month = month + months;
-        // month = month / 1000;
-        // console.log(month);
+        const webhookClient = new WebhookClient({ url: process.env.discordWebhook });
+        const embed = new EmbedBuilder()
+            .setColor("Green")
+            .setAuthor({ name: `[BOT]` })
+            .setDescription(`\`\`\`ansi\n[0;32m[BOT] Ready! ${client.user.tag} is online!\`\`\``);
+        webhookClient.send({ embeds: [embed] });
         console.log(`[BOT] Ready! ${client.user.tag} is online!`.green);
     },
 };

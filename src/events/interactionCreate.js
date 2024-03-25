@@ -1,6 +1,16 @@
-const { Interaction, PermissionFlagsBits } = require("discord.js");
+const {
+    Interaction,
+    PermissionFlagsBits,
+    WebhookClient,
+    EmbedBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ChannelType,
+    ActionRowBuilder,
+} = require("discord.js");
 const ProfileModel = require("../models/profileSchema");
 const whitelist = ["348902272534839296"];
+const TicketModel = require("../models/ticket");
 var colors = require("colors");
 colors.enable();
 const mapTypes = {
@@ -52,11 +62,7 @@ module.exports = {
                 ephemeral: true,
             });
         const config = await client.configs.get(interaction.guild.id);
-        if (interaction.guildId === "1161001645698715698")
-            return interaction.reply({
-                content: "All commands are temporarily disabled.",
-                ephemeral: true,
-            });
+        const webhookClient = new WebhookClient({ url: process.env.discordWebhook });
         // //Forever buttons
         // try {
         //     if (interaction.isButton()) {
@@ -65,6 +71,96 @@ module.exports = {
         // } catch (error) {
         //     console.log(`[INTERACTION CREATE] Error with buttons ${error}`.red);
         // }
+        // Ticket system
+        try {
+            if (interaction.isButton() && interaction.customId === "ticket-button") {
+                const checkChannel = await interaction.guild.channels.cache.find(
+                    (c) => c.name === `ticket-${interaction.user.id}`
+                );
+                if (checkChannel) {
+                    return interaction.reply({
+                        content: "You already have a ticket open",
+                        ephemeral: true,
+                    });
+                }
+                const data = await TicketModel.findOne({ guildId: interaction.guild.id });
+                if (!data) {
+                    return interaction.reply({
+                        content: "Ticket system is not setup",
+                        ephemeral: true,
+                    });
+                }
+                const categoryId = data.categoryId;
+                const embed = new EmbedBuilder()
+                    .setColor("Blurple")
+                    .setTitle(`Ticket for ${interaction.user.username}`)
+                    .setDescription(
+                        `Please describe your issue or question in detail. Staff will be with you shortly.`
+                    );
+                const button = new ButtonBuilder()
+                    .setStyle(ButtonStyle.Danger)
+                    .setLabel("Close Ticket")
+                    .setCustomId("close-ticket");
+                const row = new ActionRowBuilder().setComponents(button);
+                const channel = await interaction.guild.channels.create({
+                    name: `ticket-${interaction.user.id}`,
+                    type: ChannelType.GuildText,
+                    parent: categoryId,
+                    permissionOverwrites: [
+                        {
+                            id: interaction.guild.id,
+                            deny: ["ViewChannel"],
+                        },
+                        {
+                            id: interaction.user.id,
+                            allow: ["ViewChannel", "SendMessages", "AttachFiles"],
+                        },
+                        {
+                            id: data.role,
+                            allow: ["ViewChannel", "ManageChannels"],
+                        },
+                    ],
+                });
+                const msg = await channel.send({
+                    content: `<@&${data.role}>`,
+                    embeds: [embed],
+                    components: [row],
+                });
+                await interaction.reply({
+                    content: `Your ticket is now open in ${channel}`,
+                    ephemeral: true,
+                });
+                const collector = msg.createMessageComponentCollector();
+                collector.on("collect", async (i) => {
+                    if (i.customId === "close-ticket") {
+                        const userId = i.channel.name.split("-")[1];
+                        await channel.delete();
+                        const dmEmbed = new EmbedBuilder()
+                            .setColor("Blue")
+                            .setTitle("Ticket Closed")
+                            .setTimestamp()
+                            .setDescription(
+                                "Thank you for contacting our staff team! If you need further assistance, please open another ticket."
+                            );
+                        const member = await interaction.guild.members.fetch(userId);
+                        await member.send({ embeds: [dmEmbed] }).catch((err) => {
+                            return;
+                        });
+                    }
+                });
+            }
+        } catch (error) {
+            const embed = new EmbedBuilder()
+                .setColor("Red")
+                .setAuthor({ name: `[INTERACTION CREATE]` })
+                .setDescription(
+                    `\`\`\`ansi\n[0;31m[INTERACTION CREATE] Error with ticket system ${error.stack}\`\`\``
+                );
+            webhookClient.send({ embeds: [embed] }).catch((e) => {
+                console.log(`[INTERACTION CREATE] Webhook failed to send`.red);
+            });
+            console.log(`[INTERACTION CREATE] Error with ticket system ${error.stack}`.red);
+        }
         //autocomplete options
         try {
             if (interaction.isAutocomplete()) {
@@ -107,6 +203,15 @@ module.exports = {
                 return;
             }
         } catch (error) {
+            const embed = new EmbedBuilder()
+                .setColor("Red")
+                .setAuthor({ name: `[INTERACTION CREATE]` })
+                .setDescription(
+                    `\`\`\`ansi\n[0;31m[INTERACTION CREATE] Error with autocomplete options ${error.stack}\`\`\``
+                );
+            webhookClient.send({ embeds: [embed] }).catch((e) => {
+                console.log(`[INTERACTION CREATE] Webhook failed to send`.red);
+            });
             console.log(`[INTERACTION CREATE] Error with autocomplete options ${error.stack}`.red);
         }
 
@@ -211,12 +316,34 @@ module.exports = {
                     }
                 );
             } catch (error) {
+                const embed = new EmbedBuilder()
+                    .setColor("Red")
+                    .setAuthor({ name: `[INTERACTION CREATE]` })
+                    .setDescription(
+                        `\`\`\`ansi\n[0;31m[INTERACTION CREATE] error with updating command counter ${error.stack}\`\`\``
+                    );
+                webhookClient.send({ embeds: [embed] }).catch((e) => {
+                    console.log(`[INTERACTION CREATE] Webhook failed to send`.red);
+                });
                 console.log("[INTERACTION CREATE] error with updating command counter".red);
             }
             //execute the command
             try {
                 await command.execute(interaction, client);
             } catch (error) {
+                const embed = new EmbedBuilder()
+                    .setColor("Red")
+                    .setAuthor({ name: `[INTERACTION CREATE]` })
+                    .setDescription(
+                        `\`\`\`ansi\n[0;31m[INTERACTION CREATE] ${error.stack}\n[INTERACTION CREATE] ${
+                            interaction.user.username
+                        } used ${interaction.commandName} in ${
+                            interaction.channel.name
+                        } at ${new Date(Date.now())}\`\`\``
+                    );
+                webhookClient.send({ embeds: [embed] }).catch((e) => {
+                    console.log(`[INTERACTION CREATE] Webhook failed to send`.red);
+                });
                 console.log(
                     `[INTERACTION CREATE] ${error.stack}\n[INTERACTION CREATE] ${
                         interaction.user.username
@@ -232,6 +359,13 @@ module.exports = {
                     .catch((e) => {});
             }
         } catch (error) {
+            const embed = new EmbedBuilder()
+                .setColor("Red")
+                .setAuthor({ name: `[INTERACTION CREATE]` })
+                .setDescription(`\`\`\`ansi\n[0;31m[INTERACTION CREATE] ${error.stack}\`\`\``);
+            webhookClient.send({ embeds: [embed] }).catch((e) => {
+                console.log(`[INTERACTION CREATE] Webhook failed to send`.red);
+            });
             console.log(`[INTERACTION CREATE] ${error.stack}\n${new Date(Date.now())}`.red);
         }
     },

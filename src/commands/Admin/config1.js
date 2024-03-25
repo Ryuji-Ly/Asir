@@ -239,6 +239,7 @@ module.exports = {
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
+        return interaction.reply({ content: "This command is being fixed.", ephemeral: true });
         const subcommand = options.getSubcommand();
         const data = await guildConfiguration.findOne({ guildId: guild.id });
         if (subcommand === "set-currency-name") {

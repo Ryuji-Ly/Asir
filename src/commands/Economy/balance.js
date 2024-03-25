@@ -7,7 +7,7 @@ const {
 const ProfileModel = require("../../models/profileSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
 
-module.exports = {
+const command = {
     data: new SlashCommandBuilder()
         .setName("balance")
         .setDescription("Displays your current balance"),
@@ -36,3 +36,4 @@ module.exports = {
         return;
     },
 };
+module.exports = command;

@@ -53,9 +53,7 @@ module.exports = {
             const message = await interaction.channel.send(
                 `${user} just tried to send a secret message to themselves!\n\nThe secret message was: ${secret}`
             );
-            setTimeout(() => {
-                message.delete();
-            }, 1000 * 30);
+            return;
         }
         const embed = new EmbedBuilder()
             .setDescription(`${user} sent a secret message to ${target}`)
