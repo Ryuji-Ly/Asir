@@ -11,6 +11,7 @@ const {
 const ProfileModel = require("../models/profileSchema");
 const whitelist = ["348902272534839296"];
 const TicketModel = require("../models/ticket");
+const ServerConfig = require("../models/serverConfigs");
 var colors = require("colors");
 colors.enable();
 const mapTypes = {
@@ -83,14 +84,14 @@ module.exports = {
                         ephemeral: true,
                     });
                 }
-                const data = await TicketModel.findOne({ guildId: interaction.guild.id });
+                const data = await ServerConfig.findOne({ guildId: interaction.guild.id });
                 if (!data) {
                     return interaction.reply({
                         content: "Ticket system is not setup",
                         ephemeral: true,
                     });
                 }
-                const categoryId = data.categoryId;
+                const categoryId = data.channels.find((c) => c.name === "ticket").value[1].value;
                 const embed = new EmbedBuilder()
                     .setColor("Blurple")
                     .setTitle(`Ticket for ${interaction.user.username}`)
@@ -116,13 +117,13 @@ module.exports = {
                             allow: ["ViewChannel", "SendMessages", "AttachFiles"],
                         },
                         {
-                            id: data.role,
+                            id: data.channels.find((c) => c.name === "ticket").value[2].value,
                             allow: ["ViewChannel", "ManageChannels"],
                         },
                     ],
                 });
                 const msg = await channel.send({
-                    content: `<@&${data.role}>`,
+                    content: `<@&${data.channels.find((c) => c.name === "ticket").value[2].value}>`,
                     embeds: [embed],
                     components: [row],
                 });

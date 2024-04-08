@@ -99,11 +99,9 @@ module.exports = {
                         iconURL: guild.iconURL(),
                     })
                     .setColor("Blurple")
-                    .setDescription(`A member's timeout has been removed!`)
-                    .addFields(
-                        { name: `Issuer`, value: `${member}` },
-                        { name: "Member", value: `${target}` },
-                        { name: "Reason", value: `${reason}` }
+                    .setTitle(`A member's timeout has been removed!`)
+                    .setDescription(
+                        `**Issuer**: ${member}\n**Member**: ${target}\n**Reason**: ${reason}`
                     )
                     .setTimestamp();
                 await channel.send({ embeds: [logEmbed] });

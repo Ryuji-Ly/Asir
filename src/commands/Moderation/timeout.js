@@ -118,19 +118,14 @@ module.exports = {
                         iconURL: guild.iconURL(),
                     })
                     .setColor("Blurple")
-                    .setDescription(`A member has been timed out!`)
-                    .addFields(
-                        { name: `Issuer`, value: `${member}` },
-                        { name: "Member", value: `${target}` },
-                        {
-                            name: "Duration",
-                            value: `${ms(ms(duration), { long: true })}`,
-                        },
-                        { name: "Reason", value: `${reason}` },
-                        {
-                            name: "Total infractions",
-                            value: `${data.infractions.length}`,
-                        }
+                    .setTitle(`A member has been timed out!`)
+                    .setDescription(
+                        `**Issued by:** ${member}\n**Member:** ${target}\n**Duration:** ${ms(
+                            ms(duration),
+                            { long: true }
+                        )}\n**Reason:** ${reason}\n**Total infractions:** ${
+                            data.infractions.length
+                        }`
                     )
                     .setTimestamp();
                 await channel.send({ embeds: [logEmbed] });

@@ -18,6 +18,7 @@ const command = {
      */
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
+        await interaction.deferReply();
         const config = await client.configs.get(guild.id);
         if (!config.Economy)
             return interaction.reply({ content: "Economy is disabled", ephemeral: true });
@@ -32,7 +33,7 @@ const command = {
             .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
             .setColor(interaction.member.displayHexColor)
             .setDescription(`You're current balance is ${data.balance} ${config.currencyName}`);
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
         return;
     },
 };

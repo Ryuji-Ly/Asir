@@ -37,10 +37,10 @@ module.exports = {
                 ephemeral: true,
             });
         const data = await ProfileModel.findOne({ guildId: interaction.guild.id, userId: user.id });
-        if (data.warnings === config.warnLimit) {
+        if (data.warnings + 1 === config.warnLimit) {
             data.warnings = 0;
             await user
-                .timeout(config.timeoutDuration, "Automated timeout after surpassing warn limit")
+                .timeout(config.timeoutDuration, "Automated timeout after reaching warn limit")
                 .catch((err) => {
                     return console.log(`[BOT] Error with automated timeout: ${err}`.red);
                 });

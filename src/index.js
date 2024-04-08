@@ -9,6 +9,7 @@ const {
     ActivityType,
     Collection,
     WebhookClient,
+    IntentsBitField,
 } = require(`discord.js`);
 const { ImgurClient } = require("imgur");
 const GuildConfig = require("./models/guildConfiguration");
@@ -68,9 +69,9 @@ const commandFolders = fs.readdirSync("./src/commands");
             const embed = new EmbedBuilder()
                 .setColor("Red")
                 .setAuthor({ name: `[DATABASE]` })
-                .setDescription(`\`\`\`js\nError connecting to database:\n${err}\`\`\``);
+                .setDescription(`\`\`\`ansi\n[0;31mError connecting to database:\n${err}\`\`\``);
             webhookClient.send({ embeds: [embed] });
-            console.log(`[DATABASE] Error with connecting to database: ${err}`);
+            console.log(`[DATABASE] Error with connecting to database: ${err.stack}`.red);
         });
     await client.login(process.env.token);
     client.guilds.cache.forEach(async (guild) => {
