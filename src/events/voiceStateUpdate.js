@@ -8,14 +8,14 @@ module.exports = {
     name: "voiceStateUpdate",
     async execute(oldState, newState, client) {
         const config = await client.configs.get(oldState.guild.id);
-        if (config.voiceLogChannelId !== "") {
-            const channel = await oldState.guild.channels.cache.get(config.voiceLogChannelId);
+        if (config.channels.voiceLog !== "") {
+            const channel = await oldState.guild.channels.cache.get(config.channels.voiceLog);
             if (channel) {
                 const memberId = oldState.id;
                 const member = oldState.guild.members.cache.get(memberId);
                 const prevChannelId = oldState.channelId;
                 const newChannelId = newState.channelId;
-                if (config.voiceLogs[0].value) {
+                if (config.moderation.voiceLogs.join) {
                     if (prevChannelId === null) {
                         const newchannel = oldState.guild.channels.cache.get(newChannelId);
                         const embed = new EmbedBuilder()
@@ -32,7 +32,7 @@ module.exports = {
                         return;
                     }
                 }
-                if (config.voiceLogs[1].value) {
+                if (config.moderation.voiceLogs.move) {
                     if (prevChannelId !== null && newChannelId !== null) {
                         const prevchannel = oldState.guild.channels.cache.get(prevChannelId);
                         const newchannel = oldState.guild.channels.cache.get(newChannelId);
@@ -50,7 +50,7 @@ module.exports = {
                         return;
                     }
                 }
-                if (config.voiceLogs[2].value) {
+                if (config.moderation.voiceLogs.leave) {
                     if (newChannelId === null) {
                         const prevchannel = oldState.guild.channels.cache.get(prevChannelId);
                         const embed = new EmbedBuilder()

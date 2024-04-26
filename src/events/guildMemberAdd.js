@@ -1,6 +1,5 @@
 var colors = require("colors");
 colors.enable();
-const guildConfiguration = require("../models/guildConfiguration");
 const ProfileModel = require("../models/profileSchema");
 const { EmbedBuilder } = require("discord.js");
 
@@ -9,17 +8,18 @@ module.exports = {
     async execute(member, client) {
         if (member.user.bot) return;
         else {
+            const config = await client.configs.get(member.guild.id);
             const newUser = await ProfileModel.create({
                 userId: member.user.id,
                 guildId: member.guild.id,
+                balance: config.economy.baseBalance,
             });
             await newUser.save();
-            const guildconfig = await client.configs.get(member.guild.id);
-            if (guildconfig.welcomeChannelId !== "") {
+            if (config.channels.welcome !== "") {
                 const guild = member.guild;
                 try {
                     const channel = guild.channels.cache.find(
-                        (channel) => channel.id === guildconfig.welcomeChannelId
+                        (channel) => channel.id === config.channels.welcome
                     );
                     if (!channel)
                         return console.log(

@@ -84,14 +84,13 @@ module.exports = {
                         ephemeral: true,
                     });
                 }
-                const data = await ServerConfig.findOne({ guildId: interaction.guild.id });
-                if (!data) {
+                if (config.channels.ticket.length === 0) {
                     return interaction.reply({
-                        content: "Ticket system is not setup",
+                        content: "Ticket system is disabled",
                         ephemeral: true,
                     });
                 }
-                const categoryId = data.channels.find((c) => c.name === "ticket").value[1].value;
+                const categoryId = config.channels.ticket[1].value;
                 const embed = new EmbedBuilder()
                     .setColor("Blurple")
                     .setTitle(`Ticket for ${interaction.user.username}`)
@@ -117,13 +116,13 @@ module.exports = {
                             allow: ["ViewChannel", "SendMessages", "AttachFiles"],
                         },
                         {
-                            id: data.channels.find((c) => c.name === "ticket").value[2].value,
+                            id: config.channels.ticket[2].value,
                             allow: ["ViewChannel", "ManageChannels"],
                         },
                     ],
                 });
                 const msg = await channel.send({
-                    content: `<@&${data.channels.find((c) => c.name === "ticket").value[2].value}>`,
+                    content: `<@&${config.channels.ticket[2].value}>`,
                     embeds: [embed],
                     components: [row],
                 });
@@ -165,43 +164,43 @@ module.exports = {
         //autocomplete options
         try {
             if (interaction.isAutocomplete()) {
-                if (interaction.commandName === "blacklist-user-command") {
-                    const array = [...client.commands.values()];
-                    const focusedValue = interaction.options.getFocused();
-                    const filterdChoises = array.filter((command) =>
-                        command.data.name.toLowerCase().startsWith(focusedValue.toLowerCase())
-                    );
-                    const results = filterdChoises.map((choice) => {
-                        return {
-                            name: `${choice.data.name}`,
-                            value: `${choice.data.name}`,
-                        };
-                    });
-                    interaction.respond(results.slice(0, 25)).catch(() => {});
-                    return;
-                }
-                if (interaction.commandName === "config2") {
-                    const subcommand = interaction.options.getSubcommand();
-                    if (subcommand === "commands") {
-                        const excluded = ["config1", "config2"];
-                        const array = [...client.commands.values()].filter(
-                            (command) => !excluded.includes(command.data.name)
-                        );
-                        const focusedValue = interaction.options.getFocused();
-                        const filterdChoises = array.filter((command) =>
-                            command.data.name.toLowerCase().startsWith(focusedValue.toLowerCase())
-                        );
-                        const results = filterdChoises.map((choice) => {
-                            return {
-                                name: `${choice.data.name}`,
-                                value: `${choice.data.name}`,
-                            };
-                        });
-                        await interaction.respond(results.slice(0, 25)).catch(() => {});
-                        return;
-                    }
-                }
-                return;
+                // if (interaction.commandName === "blacklist-user-command") {
+                //     const array = [...client.commands.values()];
+                //     const focusedValue = interaction.options.getFocused();
+                //     const filterdChoises = array.filter((command) =>
+                //         command.data.name.toLowerCase().startsWith(focusedValue.toLowerCase())
+                //     );
+                //     const results = filterdChoises.map((choice) => {
+                //         return {
+                //             name: `${choice.data.name}`,
+                //             value: `${choice.data.name}`,
+                //         };
+                //     });
+                //     interaction.respond(results.slice(0, 25)).catch(() => {});
+                //     return;
+                // }
+                // if (interaction.commandName === "config2") {
+                //     const subcommand = interaction.options.getSubcommand();
+                //     if (subcommand === "commands") {
+                //         const excluded = ["config1", "config2"];
+                //         const array = [...client.commands.values()].filter(
+                //             (command) => !excluded.includes(command.data.name)
+                //         );
+                //         const focusedValue = interaction.options.getFocused();
+                //         const filterdChoises = array.filter((command) =>
+                //             command.data.name.toLowerCase().startsWith(focusedValue.toLowerCase())
+                //         );
+                //         const results = filterdChoises.map((choice) => {
+                //             return {
+                //                 name: `${choice.data.name}`,
+                //                 value: `${choice.data.name}`,
+                //             };
+                //         });
+                //         await interaction.respond(results.slice(0, 25)).catch(() => {});
+                //         return;
+                //     }
+                // }
+                // return;
             }
         } catch (error) {
             const embed = new EmbedBuilder()
@@ -220,9 +219,14 @@ module.exports = {
         try {
             if (interaction.isChatInputCommand()) {
                 if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
-                    if (config.restrictedChannelIds.includes(interaction.channel.id))
+                    if (config.channels.restricted.includes(interaction.channel.id))
                         return interaction.reply({
                             content: "This channel has been restricted from all commands",
+                            ephemeral: true,
+                        });
+                    if (config.channels.blacklisted.includes(interaction.channel.id))
+                        return interaction.reply({
+                            content: "This channel has been blacklisted from all commands",
                             ephemeral: true,
                         });
                 }
@@ -239,14 +243,14 @@ module.exports = {
             }
             if (!interaction.isCommand()) return;
             //checking if command is disabled
-            if (config.disabledCommands.includes(interaction.commandName)) {
+            if (config.commands.disabled.includes(interaction.commandName)) {
                 return interaction.reply({
                     content: `This command has been disabled for this server`,
                     ephemeral: true,
                 });
             }
             //checking if a user is blacklisted from commands
-            if (config.blacklist.includes(interaction.user.id))
+            if (config.commands.blacklistedUsers.includes(interaction.user.id))
                 return interaction.reply({
                     content: "You are blacklisted from all commands",
                     ephemeral: true,
@@ -257,8 +261,28 @@ module.exports = {
                     content: "You are blacklisted from this command",
                     ephemeral: true,
                 });
+
             const command = client.commands.get(interaction.commandName);
             if (!command) return;
+            if (
+                interaction.commandName === "2048" ||
+                interaction.commandName === "blackjack" ||
+                interaction.commandName === "flood" ||
+                interaction.commandName === "minesweeper" ||
+                interaction.commandName === "trivia"
+            ) {
+                if (config.channels.minigame.length !== 0) {
+                    if (!config.channels.minigame.includes(interaction.channel.id)) {
+                        return interaction.reply({
+                            content: `This command can only be used in minigame channels\n${config.channels.minigame
+                                .map((c) => `<#${c}>`)
+                                .join(", ")}`,
+                            ephemeral: true,
+                        });
+                    }
+                }
+            }
+
             //check if user data exists
             const user = await ProfileModel.findOne({
                 userId: interaction.user.id,

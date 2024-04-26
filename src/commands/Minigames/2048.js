@@ -23,9 +23,13 @@ module.exports = {
         const config = await client.configs.get(guild.id);
         //cooldown
         let cooldown = 0;
-        if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
-            cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
-        } else cooldown = config.defaultMinigameCooldown;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = config.commands.defaultMinigameCooldown;
         const cd = await handleCooldowns(interaction, cooldown);
         if (cd === false) return;
         await interaction.deferReply();
@@ -162,9 +166,9 @@ module.exports = {
             await data.save();
             let string = "";
             if (result === true)
-                string = `Congratulations! You have won ${winnings} ${config.currencyName}!`;
+                string = `Congratulations! You have won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} !`;
             else
-                string = `You have lost... You still win ${winnings} ${config.currencyName} though.`;
+                string = `You have lost... You still win ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} though.`;
             const embed = new EmbedBuilder()
                 .setTitle("2048")
                 .setColor("Purple")

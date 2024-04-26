@@ -7,6 +7,7 @@ const {
 } = require("discord.js");
 const canvacord = require("canvacord");
 const ProfileModel = require("../../models/profileSchema");
+const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -23,7 +24,17 @@ module.exports = {
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
-        if (config.Level) {
+        let cooldown = 0;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = 0;
+        const cd = await handleCooldowns(interaction, cooldown);
+        if (cd === false) return;
+        if (config.level.enabled) {
             await interaction.deferReply();
             let target = options.getUser("user");
             if (!target) target = user;
@@ -41,12 +52,12 @@ module.exports = {
             });
             const currentRank = allLevels.findIndex((lvl) => lvl.userId === target.id) + 1;
             let levelRequirement = 0;
-            if (config.xpScaling === "constant") {
-                levelRequirement = config.xpBaseRequirement;
-            } else if (config.xpScaling === "multiply") {
-                levelRequirement = data.level * config.xpBaseRequirement;
-            } else if (config.xpScaling === "exponential") {
-                levelRequirement = data.level ** 2 * config.xpBaseRequirement;
+            if (config.level.xpScaling === "constant") {
+                levelRequirement = config.level.xpBaseRequirement;
+            } else if (config.level.xpScaling === "multiply") {
+                levelRequirement = data.level * config.level.xpBaseRequirement;
+            } else if (config.level.xpScaling === "exponential") {
+                levelRequirement = data.level ** 2 * config.level.xpBaseRequirement;
             }
             const rank = new canvacord.Rank()
                 .setAvatar(target.displayAvatarURL({ size: 256 }))

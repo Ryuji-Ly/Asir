@@ -4,8 +4,62 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
 const parseMilliseconds = require("parse-ms-2");
+function chunkDescription(description) {
+    const chunks = [];
+    const maxChunkLength = 4000;
+    let currentChunk = "";
+    for (const line of description.split("\n")) {
+        if (currentChunk.length + line.length > maxChunkLength) {
+            chunks.push(currentChunk);
+            currentChunk = "";
+        }
+        currentChunk += line + "\n";
+    }
+    if (currentChunk) {
+        chunks.push(currentChunk);
+    }
+    return chunks;
+}
+async function sendEmbedWithChunks(interaction, chunks) {
+    if (!chunks || chunks.length === 0) return;
+    const totalChunks = chunks.length;
+    const embeds = [];
+    if (totalChunks === 1) {
+        const embed = new EmbedBuilder()
+            .setColor("Purple")
+            .setTitle(`All Configurations`)
+            .setDescription(chunks.shift())
+            .setTimestamp();
+        embeds.push(embed);
+    } else {
+        const firstEmbed = new EmbedBuilder()
+            .setColor("Purple")
+            .setTitle(`All Configurations`)
+            .setDescription(chunks.shift())
+            .setFooter({ text: `[1/${totalChunks}]` })
+            .setTimestamp();
+        embeds.push(firstEmbed);
+    }
+    let currentChunk = 1;
+
+    for (const chunk of chunks) {
+        const subsequentEmbed = new EmbedBuilder();
+        subsequentEmbed.setTitle(null);
+        subsequentEmbed.setDescription(chunk);
+        subsequentEmbed.setFooter({
+            text: `[${currentChunk + 1}/${totalChunks}]`,
+        });
+        subsequentEmbed.setColor("Green");
+        subsequentEmbed.setTimestamp();
+        currentChunk++;
+        embeds.push(subsequentEmbed);
+    }
+
+    for (const embed of embeds) {
+        await interaction.channel.send({ embeds: [embed] });
+    }
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -19,327 +73,238 @@ module.exports = {
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
-        return interaction.reply({ content: "This command is being fixed.", ephemeral: true });
-        const embed1 = new EmbedBuilder()
-            .setAuthor({ name: user.username, iconURL: user.avatarURL() })
-            .setTitle(`Displaying configurations of ${guild.name}`)
-            .setThumbnail(guild.iconURL())
-            .setColor("Blurple");
-        const embed2 = new EmbedBuilder()
-            .setAuthor({ name: user.username, iconURL: user.avatarURL() })
-            .setThumbnail(guild.iconURL())
-            .setTitle(`Displaying configurations of ${guild.name}`)
-            .setColor("Blurple");
-        //add fields welc, suggest, group, level, ticket, report, ignored, restrict, minigame, modlog, memberlog, voicelog, messagelog
-        if (config.welcomeChannelId === "") {
-            embed1.addFields({ name: "Welcome Channel", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.welcomeChannelId
-            );
-            embed1.addFields({ name: `Welcome Channel`, value: `${channel}`, inline: true });
-        }
-        if (config.suggestionChannelIds.length === 0) {
-            embed1.addFields({ name: "Suggestion Channels", value: `N/A`, inline: true });
-        } else {
-            let string = [];
-            for (let i = 0; i < config.suggestionChannelIds.length; i++) {
-                const channel = guild.channels.cache.find(
-                    (channel) => channel.id === config.suggestionChannelIds[i]
-                );
-                string.push(channel);
+        let desc = "";
+        try {
+            desc += `**Channels**\n`;
+            if (config.channels.welcome !== "") {
+                desc += `Welcome: <#${config.channels.welcome}>\n`;
+            } else {
+                desc += `Welcome: N/A\n`;
             }
-            embed1.addFields({
-                name: `Suggestion Channels`,
-                value: `${string}`,
-                inline: true,
-            });
-        }
-        if (config.groupCategoryId === "") {
-            embed1.addFields({ name: "Group Category", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.groupCategoryId
-            );
-            embed1.addFields({ name: `Group Category`, value: `${channel}`, inline: true });
-        }
-        if (config.levelChannelId === "") {
-            embed1.addFields({ name: "Level Channel", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.levelChannelId
-            );
-            embed1.addFields({ name: `Level Channel`, value: `${channel}`, inline: true });
-        }
-        if (config.ticketChannelId === "") {
-            embed1.addFields({ name: "Ticket Channel", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.ticketChannelId
-            );
-            embed1.addFields({ name: `Ticket Channel`, value: `${channel}`, inline: true });
-        }
-        if (config.reportChannelId === "") {
-            embed1.addFields({ name: "Message Reports Channel", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.reportChannelId
-            );
-            embed1.addFields({
-                name: `Message Reports Channel`,
-                value: `${channel}`,
-                inline: true,
-            });
-        }
-        if (config.ignoredChannelIds.length === 0) {
-            embed1.addFields({ name: "Ignored Channels", value: `N/A`, inline: true });
-        } else {
-            let string = [];
-            for (let i = 0; i < config.ignoredChannelIds.length; i++) {
-                const channel = guild.channels.cache.find(
-                    (channel) => channel.id === config.ignoredChannelIds[i]
-                );
-                string.push(channel);
+            if (config.channels.level !== "") {
+                desc += `Level: <#${config.channels.level}>\n`;
+            } else {
+                desc += `Level: N/A\n`;
             }
-            embed1.addFields({
-                name: `Ignored Channels`,
-                value: `${string}`,
-                inline: true,
-            });
-        }
-        if (config.restrictedChannelIds.length === 0) {
-            embed1.addFields({ name: "Restricted Channels", value: `N/A`, inline: true });
-        } else {
-            let string = [];
-            for (let i = 0; i < config.restrictedChannelIds.length; i++) {
-                const channel = guild.channels.cache.find(
-                    (channel) => channel.id === config.restrictedChannelIds[i]
-                );
-                string.push(channel);
+            if (config.channels.report !== "") {
+                desc += `Report: <#${config.channels.report}>\n`;
+            } else {
+                desc += `Report: N/A\n`;
             }
-            embed1.addFields({
-                name: `Restricted Channels`,
-                value: `${string}`,
-                inline: true,
-            });
-        }
-        if (config.minigameChannelIds.length === 0) {
-            embed1.addFields({ name: "Minigame Channels", value: `N/A`, inline: true });
-        } else {
-            let string = [];
-            for (let i = 0; i < config.minigameChannelIds.length; i++) {
-                const channel = guild.channels.cache.find(
-                    (channel) => channel.id === config.minigameChannelIds[i]
-                );
-                string.push(channel);
+            if (config.channels.ticket.length !== 0) {
+                desc += `Ticket: <#${config.channels.ticket[0].value}>. Created in: <#${config.channels.ticket[1].value}>. Pings: <@&${config.channels.ticket[2].value}>\n`;
+            } else {
+                desc += `Ticket: N/A\n`;
             }
-            embed1.addFields({
-                name: `Minigame Channels`,
-                value: `${string}`,
-                inline: true,
-            });
-        }
-        if (config.modLogChannelId === "") {
-            embed1.addFields({ name: "Moderation Log Channel", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.modLogChannelId
-            );
-            embed1.addFields({
-                name: `Moderation Log Channel`,
-                value: `${channel}`,
-                inline: true,
-            });
-        }
-        if (config.messageLogChannelId === "") {
-            embed1.addFields({ name: "Message Log Channel", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.messageLogChannelId
-            );
-            embed1.addFields({
-                name: `Message Log Channel`,
-                value: `${channel}`,
-                inline: true,
-            });
-        }
-        if (config.memberLogChannelId === "") {
-            embed1.addFields({ name: "Member Log Channel", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.memberLogChannelId
-            );
-            embed1.addFields({
-                name: `Member Log Channel`,
-                value: `${channel}`,
-                inline: true,
-            });
-        }
-        if (config.voiceLogChannelId === "") {
-            embed1.addFields({ name: "Voice Log Channel", value: `N/A`, inline: true });
-        } else {
-            const channel = guild.channels.cache.find(
-                (channel) => channel.id === config.voiceLogChannelId
-            );
-            embed1.addFields({
-                name: `Voice Log Channel`,
-                value: `${channel}`,
-                inline: true,
-            });
-        }
-        const { hours, minutes } = parseMilliseconds(config.timeoutDuration);
-        let modlogstring = "";
-        let memberlogstring = "";
-        let messagelogstring = "";
-        let voicelogstring = "";
-        for (let i = 0; i < config.modLogs.length; i++) {
-            let emoji;
-            if (config.modLogs[i].value === true) emoji = "✅";
-            if (config.modLogs[i].value === false) emoji = "❌";
-            modlogstring += `${emoji} ${config.modLogs[i].name}\n`;
-        }
-        for (let i = 0; i < config.memberLogs.length; i++) {
-            let emoji;
-            if (config.memberLogs[i].value === true) emoji = "✅";
-            if (config.memberLogs[i].value === false) emoji = "❌";
-            memberlogstring += `${emoji} ${config.memberLogs[i].name}\n`;
-        }
-        for (let i = 0; i < config.messageLogs.length; i++) {
-            let emoji;
-            if (config.messageLogs[i].value === true) emoji = "✅";
-            if (config.messageLogs[i].value === false) emoji = "❌";
-            messagelogstring += `${emoji} ${config.messageLogs[i].name}\n`;
-        }
-        for (let i = 0; i < config.voiceLogs.length; i++) {
-            let emoji;
-            if (config.voiceLogs[i].value === true) emoji = "✅";
-            if (config.voiceLogs[i].value === false) emoji = "❌";
-            voicelogstring += `${emoji} ${config.voiceLogs[i].name}\n`;
-        }
-        let disabledString;
-        if (config.disabledCommands.length === 0) disabledString = "N/A";
-        else disabledString = config.disabledCommands.join(", ");
-        embed1.addFields(
-            {
-                name: `Warn limit before auto timeout`,
-                value: `${config.warnLimit}`,
-                inline: true,
-            },
-            {
-                name: `Auto moderation timeout duration`,
-                value: `${hours} hours ${minutes} minutes`,
-                inline: true,
-            },
-            {
-                name: `Moderation logs`,
-                value: `${modlogstring}`,
-                inline: true,
-            },
-            {
-                name: `Member logs`,
-                value: `${memberlogstring}`,
-                inline: true,
-            },
-            {
-                name: `Message logs`,
-                value: `${messagelogstring}`,
-                inline: true,
-            },
-            {
-                name: `Voice logs`,
-                value: `${voicelogstring}`,
-                inline: true,
-            },
-            {
-                name: `Disabled commands`,
-                value: `${disabledString}`,
-                inline: true,
+            if (config.channels.modLog !== "") {
+                desc += `Mod Log: <#${config.channels.modLog}>\n`;
+            } else {
+                desc += `Mod Log: N/A\n`;
             }
-        );
-        let customrolestring = "";
-        if (config.customRole === false) customrolestring = "❌";
-        else customrolestring = "✅";
-        let levelstring = "";
-        if (config.Level === false)
-            levelstring = "Leveling function is disabled, all level related configs do not apply";
-        else levelstring = "Leveling function is enabled";
-        let economystring = "";
-        if (config.Economy === false)
-            economystring =
-                "Economy function is disabled, all economy related configs do not apply";
-        else economystring = "Economy function is enabled";
-        embed2.addFields(
-            {
-                name: `Currency Name`,
-                value: `${config.currencyName}`,
-                inline: true,
-            },
-            {
-                name: "Level",
-                value: `${levelstring}`,
-                inline: true,
-            },
-            {
-                name: "Economy",
-                value: `${economystring}`,
-                inline: true,
-            },
-            {
-                name: `Experience gain from Activity`,
-                value: `${config.randomXpMin} - ${config.randomXpMax}`,
-                inline: true,
-            },
-            {
-                name: `${config.currencyName} gain from Activity`,
-                value: `${config.randomCurrency}`,
-                inline: true,
-            },
-            {
-                name: `Base Experience Requirement`,
-                value: `${config.xpBaseRequirement}`,
-                inline: true,
-            },
-            {
-                name: `Experience Scaling type`,
-                value: `${config.xpScaling}`,
-                inline: true,
-            },
-            {
-                name: `Daily amount`,
-                value: `${config.dailyMin} - ${config.dailyMax}`,
-                inline: true,
-            },
-            {
-                name: `Coin flip reward`,
-                value: `${config.coinflipReward}`,
-                inline: true,
-            },
-            {
-                name: `Minigame basic reward`,
-                value: `${config.minigameReward}`,
-                inline: true,
-            },
-            {
-                name: `Custom Role Enabled/Disabled`,
-                value: `${customrolestring}`,
-                inline: true,
-            },
-            {
-                name: `Group costs`,
-                value: `Create: ${config.groupCost}\nMultiplier: ${config.groupMultiBaseCost}\nExpand: ${config.groupExpandBaseCost}`,
-                inline: true,
-            },
-            {
-                name: `User costs`,
-                value: `Multiplier: ${config.multiplierBaseCost}\nCustom Role: ${config.customRoleCost}`,
-                inline: true,
-            },
-            {
-                name: `Limits`,
-                value: `Custom Roles: ${config.customRoleLimit}\nUser Multiplier: ${config.memberMultiLimit}\nGroup Multiplier: ${config.groupMultiLimit}`,
-                inline: true,
+            if (config.channels.memberLog !== "") {
+                desc += `Member Log: <#${config.channels.memberLog}>\n`;
+            } else {
+                desc += `Member Log: N/A\n`;
             }
-        );
-        return interaction.reply({ embeds: [embed1, embed2] });
+            if (config.channels.messageLog !== "") {
+                desc += `Message Log: <#${config.channels.messageLog}>\n`;
+            } else {
+                desc += `Message Log: N/A\n`;
+            }
+            if (config.channels.voiceLog !== "") {
+                desc += `Voice Log: <#${config.channels.voiceLog}>\n`;
+            } else {
+                desc += `Voice Log: N/A\n`;
+            }
+            if (config.channels.restricted.length !== 0) {
+                desc += `Restricted: ${config.channels.restricted
+                    .map((channel) => `<#${channel}>`)
+                    .join(", ")}\n`;
+            } else {
+                desc += `Restricted: N/A\n`;
+            }
+            if (config.channels.blacklisted.length !== 0) {
+                desc += `Blacklisted: ${config.channels.blacklisted
+                    .map((channel) => `<#${channel}>`)
+                    .join(", ")}\n`;
+            } else {
+                desc += `Blacklisted: N/A\n`;
+            }
+            if (config.channels.minigame.length !== 0) {
+                desc += `Minigame: ${config.channels.minigame
+                    .map((channel) => `<#${channel}>`)
+                    .join(", ")}\n`;
+            } else {
+                desc += `Minigame: N/A\n`;
+            }
+            desc += `\n**Moderation**\n`;
+            desc += `Warn Limit: ${config.moderation.warnLimit}\n`;
+            const { minutes, hours } = parseMilliseconds(config.moderation.timeoutDuration);
+            desc += `Timeout Duration: ${hours} hours and ${minutes} minutes\n`;
+            desc += `Mod Logs: Warn: ${config.moderation.modLogs.warn ? "✅" : "❌"}, Timeout: ${
+                config.moderation.modLogs.timeout ? "✅" : "❌"
+            }, Kick: ${config.moderation.modLogs.kick ? "✅" : "❌"}, Ban: ${
+                config.moderation.modLogs.ban ? "✅" : "❌"
+            }\n`;
+            desc += `Member Logs: Role: ${config.moderation.memberLogs.role ? "✅" : "❌"}, Name: ${
+                config.moderation.memberLogs.name ? "✅" : "❌"
+            }, Avatar: ${config.moderation.memberLogs.avatar ? "✅" : "❌"}\n`;
+            desc += `Message Logs: Deleted: ${
+                config.moderation.messageLogs.deleted ? "✅" : "❌"
+            }, Edited: ${config.moderation.messageLogs.edited ? "✅" : "❌"}, Purged: ${
+                config.moderation.messageLogs.purged ? "✅" : "❌"
+            }\n`;
+            desc += `Voice Logs: Join: ${config.moderation.voiceLogs.join ? "✅" : "❌"}, Move: ${
+                config.moderation.voiceLogs.move ? "✅" : "❌"
+            }, Leave: ${config.moderation.voiceLogs.leave ? "✅" : "❌"}\n`;
+            if (config.moderation.blacklistedWords.length !== 0) {
+                desc += `Blacklisted Words: ${config.moderation.blacklistedWords.join(", ")}\n`;
+            } else {
+                desc += `Blacklisted Words: N/A\n`;
+            }
+            desc += `\n**Level**\n`;
+            desc += `Enabled: ${config.level.enabled ? "✅" : "❌"}\n`;
+            if (config.level.enabled) {
+                desc += `XP Gain Min: ${config.level.xpGainMin}\n`;
+                desc += `XP Gain Max: ${config.level.xpGainMax}\n`;
+                const {
+                    seconds: xpGainTimeSeconds,
+                    minutes: xpGainTimeMinutes,
+                    hours: xpGainTimeHours,
+                } = parseMilliseconds(config.level.xpGainTime);
+                desc += `XP Gain Time: ${xpGainTimeHours} hours, ${xpGainTimeMinutes} minutes, and ${xpGainTimeSeconds} seconds\n`;
+                desc += `Base XP Requirement: ${config.level.xpBaseRequirement}\n`;
+                desc += `XP Scaling type: ${config.level.xpScaling}\n`;
+                desc += `Level Up Message: ${config.level.levelMessage}\n`;
+                desc += `Multiplier: ${config.level.multiplier ? "✅" : "❌"}\n`;
+                if (config.level.restricted.length !== 0) {
+                    desc += `Restricted: ${config.level.restricted
+                        .map((c) => `<#${c}>`)
+                        .join(", ")}\n`;
+                } else {
+                    desc += `Restricted: N/A\n`;
+                }
+                if (config.level.ranks.length !== 0) {
+                    desc += `Ranks: ${config.level.ranks
+                        .map((r) => `${r.level} - <@&${r.role}> - ${r.rankUpMessage}`)
+                        .join("\n")}\n`;
+                } else {
+                    desc += `Ranks: N/A\n`;
+                }
+            }
+            desc += `\n**Economy**\n`;
+            desc += `Enabled: ${config.economy.enabled ? "✅" : "❌"}\n`;
+            if (config.economy.enabled) {
+                desc += `Currency: ${config.economy.currency} ${config.economy.currencySymbol}\n`;
+                desc += `Starting Balance: ${config.economy.baseBalance}\n`;
+                desc += `Currency Gain Min: ${config.economy.currencyGainMin}\n`;
+                desc += `Currency Gain Max: ${config.economy.currencyGainMax}\n`;
+                const {
+                    seconds: currencyGainTimeSeconds,
+                    minutes: currencyGainTimeMinutes,
+                    hours: currencyGainTimeHours,
+                } = parseMilliseconds(config.economy.currencyGainTime);
+                desc += `Currency Gain Time: ${currencyGainTimeHours} hours, ${currencyGainTimeMinutes} minutes, and ${currencyGainTimeSeconds} seconds\n`;
+                desc += `Daily Min: ${config.economy.dailyMin}\n`;
+                desc += `Daily Max: ${config.economy.dailyMax}\n`;
+                desc += `Coin Flip Reward: ${config.economy.coinflipReward}\n`;
+                desc += `Minigame Reward: ${config.economy.minigameReward}\n`;
+                desc += `Multiplier: ${config.economy.multiplier ? "✅" : "❌"}\n`;
+                if (config.economy.multiplier) {
+                    desc += `Multiplier Base Cost: ${config.economy.multiplierBaseCost}\n`;
+                    desc += `Multiplier Increment: ${config.economy.multiplierIncrement}\n`;
+                    desc += `Multiplier Cost Scaling: ${config.economy.multiplierCostScaling}\n`;
+                    desc += `Multiplier Max: ${config.economy.multiplierMax}\n`;
+                }
+                desc += `Custom Roles: ${config.economy.customRoles ? "✅" : "❌"}\n`;
+                if (config.economy.customRoles) {
+                    desc += `Custom Role Cost: ${config.economy.customRoleCost}\n`;
+                    if (config.economy.customRolePosition !== "") {
+                        desc += `Custom Role Position: <@&${config.economy.customRolePosition}>\n`;
+                    }
+                    desc += `Custom Role Max: ${config.economy.customRoleLimit}\n`;
+                }
+                if (config.economy.shopRoles.length !== 0) {
+                    desc += `Shop Roles: ${config.economy.shopRoles
+                        .map((role) => `<@&${role}>`)
+                        .join(", ")}\n`;
+                } else {
+                    desc += `Shop Roles: N/A\n`;
+                }
+                if (config.economy.shopItems.length !== 0) {
+                    desc += `Shop Items: ${config.economy.shopItems
+                        .map((item) => `${item.name} - ${item.price}`)
+                        .join(", ")}\n`;
+                } else {
+                    desc += `Shop Items: N/A\n`;
+                }
+                desc += `Groups: ${config.economy.groups ? "✅" : "❌"}\n`;
+                if (config.economy.groups) {
+                    desc += `Group Name: ${config.economy.group}\n`;
+                    desc += `Group Base Cost: ${config.economy.groupBaseCost}\n`;
+                    desc += `Group Base Users: ${config.economy.groupBaseUsers}\n`;
+                    desc += `Group Cost Scaling: ${config.economy.groupCostScaling}\n`;
+                    desc += `Group Category: <#${config.economy.groupCategory}>\n`;
+                    if (config.economy.groupRolePosition !== "") {
+                        desc += `Group Role Position: <@&${config.economy.groupRolePosition}>\n`;
+                    }
+                    desc += `Group Multiplier: ${config.economy.groupMultiplier ? "✅" : "❌"}\n`;
+                    if (config.economy.groupMultiplier) {
+                        desc += `Group Multiplier Base Cost: ${config.economy.groupMultiplierBaseCost}\n`;
+                        desc += `Group Multiplier Increment: ${config.economy.groupMultiplierIncrement}\n`;
+                    }
+                }
+                if (config.economy.restricted.length !== 0) {
+                    desc += `Restricted: ${config.economy.restricted
+                        .map((c) => `<#${c}>`)
+                        .join(", ")}\n`;
+                } else {
+                    desc += `Restricted: N/A\n`;
+                }
+                desc += `\n**Commands**\n`;
+                if (config.commands.disabled.length !== 0) {
+                    desc += `Disabled: ${config.commands.disabled.join(", ")}\n`;
+                } else {
+                    desc += `Disabled: N/A\n`;
+                }
+                if (config.commands.blacklistedUsers.length !== 0) {
+                    desc += `Blacklisted Users: ${config.commands.blacklistedUsers
+                        .map((u) => `<@${u}>`)
+                        .join(", ")}\n`;
+                } else {
+                    desc += `Blacklisted Users: N/A\n`;
+                }
+                if (config.commands.blacklistedUserCommands.length !== 0) {
+                    desc += `Blacklisted User Commands: ${config.commands.blacklistedUserCommands
+                        .map((u) => `<@${u.user}> - ${u.commands.join(", ")}`)
+                        .join(", ")}\n`;
+                } else {
+                    desc += `Blacklisted User Commands: N/A\n`;
+                }
+                if (config.commands.blacklistedChannelCommands.length !== 0) {
+                    desc += `Blacklisted Channel Commands: ${config.commands.blacklistedChannels
+                        .map((c) => `<#${c.channel}> - ${c.commands.join(", ")}`)
+                        .join(", ")}\n`;
+                } else {
+                    desc += `Blacklisted Channels Commands: N/A\n`;
+                }
+                if (config.commands.cooldowns.length !== 0) {
+                    desc += `Custom Cooldowns: ${config.commands.cooldowns
+                        .map((c) => `${c.command} - ${c.cooldown}`)
+                        .join(", ")}\n`;
+                } else {
+                    desc += `Cooldowns: N/A\n`;
+                }
+                desc += `Default Minigame Cooldown: ${config.commands.defaultMinigameCooldown}\n`;
+            }
+        } catch (error) {
+            console.log("Error creating configs description");
+        }
+        await interaction.reply({
+            content: "Here are all the configurations for this server:",
+            ephemeral: true,
+        });
+        const chunks = chunkDescription(desc);
+        await sendEmbedWithChunks(interaction, chunks);
     },
 };

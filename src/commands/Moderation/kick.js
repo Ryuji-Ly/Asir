@@ -61,8 +61,8 @@ module.exports = {
             });
             return;
         });
-        if (config.modLogs[2]) {
-            const channel = await guild.channels.cache.get(config.modLogChannelId);
+        if (config.moderation.modLogs.kick) {
+            const channel = await guild.channels.cache.get(config.channels.modLog);
             if (channel) {
                 const logEmbed = new EmbedBuilder()
                     .setAuthor({ name: "Member Kicked", iconURL: guild.iconURL() })

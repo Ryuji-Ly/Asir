@@ -4,7 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -27,10 +27,11 @@ module.exports = {
         const config = await client.configs.get(guild.id);
         const target = options.getUser("user");
         if (target.bot) return interaction.reply({ content: "This is a bot", ephemeral: true });
-        const data = await ProfileModel.findOne({ userId: target.id, guildId: guild.id });
-        if (data.infractions.length === 0)
+        // const data = await ProfileModel.findOne({ userId: target.id, guildId: guild.id });
+        const data = await UserDatabase.findOne({ key: { userId: target.id, guildId: guild.id } });
+        if (data.data.infractions.length === 0)
             return interaction.reply({ content: "This user has no infractions", ephemeral: true });
-        data.infractions = [];
+        data.data.infractions = [];
         await data.save();
         const embed = new EmbedBuilder()
             .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })

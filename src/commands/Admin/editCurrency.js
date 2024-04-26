@@ -4,7 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -39,15 +39,14 @@ module.exports = {
         }
         const target = options.getUser("user");
         const amount = options.getInteger("amount");
-        const data = await ProfileModel.findOne({ guildId: guild.id, userId: target.id });
-        data.balance += amount;
+        const data = await UserDatabase.findOne({ key: { userId: target.id, guildId: guild.id } });
+        data.economy.wallet += amount;
         await data.save();
         const embed = new EmbedBuilder()
             .setColor("Purple")
             .setDescription(
-                `You have changed ${target}'s balance to ${data.balance} ${config.currencyName}`
+                `You have changed ${target}'s balance to ${data.economy.wallet} ${config.economy.currency} ${config.economy.currencySymbol}`
             );
-
         await interaction.reply({ embeds: [embed] });
         return;
     },

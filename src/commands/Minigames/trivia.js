@@ -9,6 +9,7 @@ const {
     ButtonInteraction,
 } = require("discord.js");
 const ProfileModel = require("../../models/profileSchema");
+const handleCooldowns = require("../../utils/handleCooldowns");
 const questions = [
     {
         category: "Novels",
@@ -175,6 +176,16 @@ module.exports = {
         let category = options.getString("category");
         if (!category) category = "Any";
         const config = await client.configs.get(guild.id);
+        let cooldown = 0;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = 0;
+        const cd = await handleCooldowns(interaction, cooldown);
+        if (cd === false) return;
         const getRandomQuestion = (questionsArray) => {
             const randomIndex = Math.floor(Math.random() * questionsArray.length);
             const randomQuestion = questionsArray[randomIndex];

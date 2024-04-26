@@ -20,11 +20,15 @@ const command = {
         const { options, guild, user } = interaction;
         await interaction.deferReply();
         const config = await client.configs.get(guild.id);
-        if (!config.Economy)
+        if (!config.economy.enabled)
             return interaction.reply({ content: "Economy is disabled", ephemeral: true });
         let cooldown = 0;
-        if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
-            cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
         } else cooldown = 0;
         const cd = await handleCooldowns(interaction, cooldown);
         if (cd === false) return;
@@ -32,7 +36,9 @@ const command = {
         const embed = new EmbedBuilder()
             .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
             .setColor(interaction.member.displayHexColor)
-            .setDescription(`You're current balance is ${data.balance} ${config.currencyName}`);
+            .setDescription(
+                `You're current balance is ${data.balance} ${config.economy.currency} ${config.economy.currencySymbol}!`
+            );
         await interaction.editReply({ embeds: [embed] });
         return;
     },

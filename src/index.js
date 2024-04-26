@@ -13,6 +13,7 @@ const {
 } = require(`discord.js`);
 const { ImgurClient } = require("imgur");
 const GuildConfig = require("./models/guildConfiguration");
+const ServerConfig = require("./models/serverConfigs");
 const fs = require("fs");
 const client = new Client({
     intents: [
@@ -75,7 +76,13 @@ const commandFolders = fs.readdirSync("./src/commands");
         });
     await client.login(process.env.token);
     client.guilds.cache.forEach(async (guild) => {
-        const data = await GuildConfig.findOne({ guildId: guild.id });
+        let data = await ServerConfig.findOne({ guildId: guild.id });
+        if (!data) {
+            data = new ServerConfig({
+                guildId: guild.id,
+            });
+            await data.save();
+        }
         client.configs.set(guild.id, data);
     });
 })();

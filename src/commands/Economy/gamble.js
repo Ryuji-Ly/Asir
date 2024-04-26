@@ -43,18 +43,27 @@ module.exports = {
     async execute(interaction, client) {
         const { options, user, guild } = interaction;
         const config = await client.configs.get(guild.id);
+        let cooldown = 0;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = 0;
+        const cd = await handleCooldowns(interaction, cooldown);
+        if (cd === false) return;
         const gambleCommand = options.getSubcommand();
         const data = await profileModel.findOne({ userId: user.id, guildId: guild.id });
         const gambleEmbed = new EmbedBuilder().setColor(0x00aa6d);
-        if (config.Economy === false)
+        if (config.economy.enabled === false)
             return interaction.reply({ content: "Economy is disabled", ephemeral: true });
         if (gambleCommand === "three-doors") {
             const amount = options.getInteger("amount");
-
             if (data.balance < amount) {
                 await interaction.deferReply({ ephemeral: true });
                 return await interaction.editReply(
-                    `You don't have ${amount} ${config.currencyName} to gamble with`
+                    `You don't have ${amount} ${config.economy.currency} ${config.economy.currencySymbol} to gamble with`
                 );
             }
 
@@ -78,7 +87,9 @@ module.exports = {
             const row = new ActionRowBuilder().addComponents(Button1, Button2, Button3);
 
             gambleEmbed
-                .setTitle(`Playing three doors for ${amount} ${config.currencyName}`)
+                .setTitle(
+                    `Playing three doors for ${amount} ${config.economy.currency} ${config.economy.currencySymbol}`
+                )
                 .setFooter({
                     text: "Each door has 2.4x, 0.5x, or 0x the bet amount ",
                 });
@@ -144,19 +155,23 @@ module.exports = {
                     gambleEmbed
                         .setTitle("You just 2.4x'd your bet")
                         .setDescription(
-                            `${user.username} gained ${amtChange} ${config.currencyName}`
+                            `${user.username} gained ${amtChange} ${config.economy.currency} ${config.economy.currencySymbol}`
                         );
                 } else if (label === half) {
                     gambleEmbed
                         .setTitle("You just lost half your bet")
                         .setDescription(
-                            `${user.username} lost ${-amtChange} ${config.currencyName}`
+                            `${user.username} lost ${-amtChange} ${config.economy.currency} ${
+                                config.economy.currencySymbol
+                            }`
                         );
                 } else if (label === lose) {
                     gambleEmbed
                         .setTitle("You just lost your entire bet")
                         .setDescription(
-                            `${user.username} lost ${-amtChange} ${config.currencyName}`
+                            `${user.username} lost ${-amtChange} ${config.economy.currency} ${
+                                config.economy.currencySymbol
+                            }`
                         );
                 }
                 gambleEmbed.setFooter({ text: `${user.username}'s new balance: ${data.balance}` });
@@ -171,7 +186,7 @@ module.exports = {
             if (data.balance < amount) {
                 await interaction.deferReply({ ephemeral: true });
                 return await interaction.editReply(
-                    `You don't have ${amount} ${config.currencyName} to gamble with`
+                    `You don't have ${amount} ${config.economy.currency} ${config.economy.currencySymbol} to gamble with`
                 );
             }
 
@@ -186,9 +201,13 @@ module.exports = {
 
             const row = new ActionRowBuilder().addComponents(ButtonSpin);
 
-            gambleEmbed.setTitle(`Playing slots for ${amount} ${config.currencyName}`).setFooter({
-                text: "Spin the slots and see if you win!",
-            });
+            gambleEmbed
+                .setTitle(
+                    `Playing slots for ${amount} ${config.economy.currency} ${config.economy.currencySymbol}`
+                )
+                .setFooter({
+                    text: "Spin the slots and see if you win!",
+                });
 
             await interaction.editReply({
                 embeds: [gambleEmbed],
@@ -285,7 +304,7 @@ module.exports = {
                     data.balance += winnings;
                     await data.save();
                     const resultMessage = win
-                        ? `You won ${winnings} ${config.currencyName} with ${symbol} combination!`
+                        ? `You won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} with ${symbol} combination!`
                         : "Sorry, you didn't win this time.";
 
                     gambleEmbed
@@ -296,7 +315,7 @@ module.exports = {
                                 .join("\n")}\n\n${resultMessage}`
                         )
                         .setFooter({
-                            text: `${user.username}'s new balance: ${data.balance} ${config.currencyName}`,
+                            text: `${user.username}'s new balance: ${data.balance} ${config.economy.currency} ${config.economy.currencySymbol}`,
                         });
 
                     await i.update({ embeds: [gambleEmbed], components: [row] });

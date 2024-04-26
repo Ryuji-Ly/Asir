@@ -35,10 +35,10 @@ module.exports = {
     async execute(message, client) {
         const config = await client.configs.get(message.guild.id);
         if (message.author.bot) return;
-        if (config.messageLogChannelId !== "") {
-            const channel = await message.guild.channels.cache.get(config.messageLogChannelId);
+        if (config.channels.messageLog !== "") {
+            const channel = await message.guild.channels.cache.get(config.channels.messageLog);
             if (channel) {
-                if (config.messageLogs[0].value) {
+                if (config.moderation.messageLogs.deleted) {
                     const embed = new EmbedBuilder()
                         .setAuthor({
                             name: message.author.username,
@@ -46,12 +46,11 @@ module.exports = {
                         })
                         .setColor("Red")
                         .setTitle(`Message deleted in ${message.channel}`)
-                        .setDescription(`Message ID: ${message.id}`)
+                        .setDescription(
+                            `Message ID: ${message.id}\nMessage Content: ${message.content}`
+                        )
                         .setFooter({ text: `ID: ${message.author.id}` })
                         .setTimestamp();
-                    if (message.content !== "") {
-                        embed.addFields({ name: "Message Content", value: `${message.content}` });
-                    }
                     const stickerArray = [...message.stickers.values()];
                     const attachmentArray = [...message.attachments.values()];
                     if (stickerArray.length !== 0) {

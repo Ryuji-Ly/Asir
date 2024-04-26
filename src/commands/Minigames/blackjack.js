@@ -200,7 +200,7 @@ class BlackjackGame {
         if (this.gameOver) {
             desc += `\n\nGame Over! ${this.determineWinner()}`;
             const config = await this.client.configs.get(this.interaction.guild.id);
-            if (config.Economy) {
+            if (config.economy.enabled) {
                 const bet = this.interaction.options.getInteger("bet");
                 let change = 0;
                 if (bet) {
@@ -212,8 +212,8 @@ class BlackjackGame {
                         this.determineWinner() === "Dealer busted! You win." ||
                         this.determineWinner() === "You win!"
                     ) {
-                        data.balance += bet * 3;
-                        change = bet * 3;
+                        data.balance += bet * 2;
+                        change = bet * 2;
                         await data.save();
                     } else if (this.determineWinner() === "It's a tie!") {
                     } else {
@@ -222,7 +222,9 @@ class BlackjackGame {
                         await data.save();
                     }
                 }
-                embed.setFooter({ text: `You gambled and got ${change} ${config.currencyName}` });
+                embed.setFooter({
+                    text: `You gambled and got ${change} ${config.economy.currency} ${config.economy.currencySymbol}`,
+                });
             }
         }
         embed.setDescription(desc);
@@ -247,10 +249,11 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName("blackjack")
         .setDescription("Play a game of Blackjack!")
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addIntegerOption((option) =>
             option
                 .setName("bet")
-                .setDescription("Make a bet, if you win, you get triple your gamble")
+                .setDescription("Make a bet, if you win, you get double your gamble")
                 .setMinValue(100)
         ),
     /**
@@ -262,18 +265,22 @@ module.exports = {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
         const bet = options.getInteger("bet");
-        if (bet && !config.Economy)
+        if (bet && !config.economy.enabled)
             return interaction.reply({ content: "Economy is disabled", ephemeral: true });
         const data = await ProfileModel.findOne({ userId: user.id, guildId: guild.id });
         if (data.balance < bet)
             return interaction.reply({
-                content: `You do not have enough ${config.currencyName}`,
+                content: `You do not have enough ${config.economy.currency} ${config.economy.currencySymbol}`,
                 ephemeral: true,
             });
         let cooldown = 0;
-        if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
-            cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
-        } else cooldown = 1000 * 60;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = config.commands.defaultMinigameCooldown;
         const cd = await handleCooldowns(interaction, cooldown);
         if (cd === false) return;
         await interaction.deferReply();

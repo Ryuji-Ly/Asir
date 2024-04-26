@@ -31,16 +31,19 @@ module.exports = {
         if (user.user.bot) return interaction.reply({ content: "This is a bot", ephemeral: true });
         if (user.user.id === interaction.user.id)
             return interaction.reply({ content: "You cannot warn yourself", ephemeral: true });
-        if (!user.moderatable)
+        if (user.permissions.has(PermissionFlagsBits.Administrator))
             return interaction.reply({
                 content: "This user cannot be warned by you or me",
                 ephemeral: true,
             });
         const data = await ProfileModel.findOne({ guildId: interaction.guild.id, userId: user.id });
-        if (data.warnings + 1 === config.warnLimit) {
+        if (data.warnings + 1 === config.moderation.warnLimit) {
             data.warnings = 0;
             await user
-                .timeout(config.timeoutDuration, "Automated timeout after reaching warn limit")
+                .timeout(
+                    config.moderation.timeoutDuration,
+                    "Automated timeout after reaching warn limit"
+                )
                 .catch((err) => {
                     return console.log(`[BOT] Error with automated timeout: ${err}`.red);
                 });
@@ -62,9 +65,9 @@ module.exports = {
                     `${user} has been warned for: ${reason}. As they have surpassed the warn limit, they have been automatically timed out`
                 )
                 .setTimestamp();
-            if (config.modLogs[0].value) {
-                if (config.modLogChannelId !== "") {
-                    const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+            if (config.moderation.modLogs.warn) {
+                if (config.channels.modLog !== "") {
+                    const channel = interaction.guild.channels.cache.get(config.channels.modLog);
                     if (!channel) {
                         return;
                     }
@@ -87,9 +90,9 @@ module.exports = {
                 .setDescription(
                     `${user} has been warned for: ${reason}. Their warning count is now at ${data.warnings}`
                 );
-            if (config.modLogs[0].value) {
-                if (config.modLogChannelId !== "") {
-                    const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+            if (config.moderation.modLogs.warn) {
+                if (config.channels.modLog !== "") {
+                    const channel = interaction.guild.channels.cache.get(config.channels.modLog);
                     if (!channel) {
                         return;
                     }

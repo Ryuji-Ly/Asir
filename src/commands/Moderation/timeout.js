@@ -36,7 +36,7 @@ module.exports = {
         const { options, guild, member } = interaction;
         const config = await client.configs.get(guild.id);
         const target = options.getMember("user");
-        const duration = options.getString("duration");
+        let duration = options.getString("duration");
         const reason = options.getString("reason") || "No reason given.";
         const targetUserRolePosition = target.roles.highest.position; // Highest role of the target user
         const requestUserRolePosition = interaction.member.roles.highest.position; // Highest role of the user running the cmd
@@ -60,6 +60,7 @@ module.exports = {
             });
         if (target.user.bot) errorsArray.push("Selected target is a bot.");
         if (target.id === owner) errorsArray.push("Target is the server owner.");
+        if (duration === "28d") duration = "27.999d";
         if (!ms(duration) || ms(duration) > ms("28d"))
             errorsArray.push("Time provided is invalid or over the 28 day limit.");
         if (targetUserRolePosition >= botRolePosition)
@@ -106,9 +107,9 @@ module.exports = {
                     `\nReason: ${reason}`,
                 ].join("\n")
             );
-        if (config.modLogs[1].value) {
-            if (config.modLogChannelId !== "") {
-                const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+        if (config.moderation.modLogs.timeout) {
+            if (config.channels.modLog !== "") {
+                const channel = interaction.guild.channels.cache.get(config.channels.modLog);
                 if (!channel) {
                     return;
                 }

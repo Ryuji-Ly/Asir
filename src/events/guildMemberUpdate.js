@@ -9,8 +9,9 @@ module.exports = {
     async execute(oldMember, newMember, client) {
         if (oldMember.user.bot) return;
         const config = await client.configs.get(oldMember.guild.id);
-        if (config.memberLogChannelId !== "") {
-            const channel = await oldMember.guild.channels.cache.get(config.memberLogChannelId);
+        // Member log
+        if (config.channels.memberLog !== "") {
+            const channel = await oldMember.guild.channels.cache.get(config.channels.memberLog);
             if (channel) {
                 const prevRoleCount = await oldMember._roles.length;
                 const newRoleCount = await newMember._roles.length;
@@ -23,7 +24,7 @@ module.exports = {
                 const prevNickname = await oldMember.nickname;
                 const newNickname = await newMember.nickname;
                 const member = oldMember;
-                if (config.memberLogs[0].value) {
+                if (config.moderation.memberLogs.role) {
                     if (prevRoleCount < newRoleCount) {
                         const roleIds = newMember._roles.filter(
                             (role) => !oldMember._roles.includes(role)
@@ -98,7 +99,7 @@ module.exports = {
                         }
                     }
                 }
-                if (config.memberLogs[1].value) {
+                if (config.moderation.memberLogs.name) {
                     if (prevUsername !== newUsername) {
                         const embed = new EmbedBuilder()
                             .setAuthor({
@@ -173,7 +174,7 @@ module.exports = {
                         }
                     }
                 }
-                if (config.memberLogs[2].value) {
+                if (config.moderation.memberLogs.avatar) {
                     if (prevAvatar !== newAvatar) {
                         if (oldMember.avatar === null) {
                             const embed = new EmbedBuilder()

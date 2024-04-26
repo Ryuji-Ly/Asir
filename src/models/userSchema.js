@@ -8,40 +8,40 @@ const profileSchema = new mongoose.Schema({
         unique: true,
     },
     economy: {
-        type: Array,
-        default: [
-            { name: "wallet", value: 0 },
-            { name: "bank", value: 0 },
-            { name: "items", value: [] },
-        ],
+        type: Object,
+        default: {
+            wallet: 0,
+            bank: 0,
+            items: [],
+        },
     },
     level: {
-        type: Array,
-        default: [
-            { name: "level", value: 1 },
-            { name: "xp", value: 0 },
-        ],
+        type: Object,
+        default: {
+            level: 1,
+            xp: 0,
+        },
     },
     cooldowns: {
         type: Array,
         default: [],
     },
     data: {
-        type: Array,
-        default: [
-            { name: "commands", value: [] },
-            { name: "messages", value: 0 },
-            { name: "mentions", value: [] },
-            { name: "mentioned", value: [] },
-            { name: "warnings", value: 0 },
-            { name: "infractions", value: [] },
-            { name: "minigameStats", value: [] },
-            { name: "gambleStats", value: [] },
-            { name: "blacklistedCommands", value: [] },
-            { name: "customRoleCount", value: 0 },
-            { name: "shopStats", value: [] },
-            { name: "timeBasedStats", value: [] },
-        ],
+        type: Object,
+        default: {
+            commands: [],
+            messages: 0,
+            mentions: [],
+            mentioned: [],
+            warnings: 0,
+            infractions: [],
+            minigameStats: [],
+            gambleStats: [],
+            blacklistedCommands: [],
+            customRoleCount: 0,
+            shopStats: [],
+            timeBasedStats: [],
+        },
     },
     multiplier: {
         type: Number,
@@ -53,6 +53,6 @@ const profileSchema = new mongoose.Schema({
     },
 });
 
-const model = mongoose.model("user", profileSchema);
+const model = mongoose.model("database", profileSchema);
 
 module.exports = model;

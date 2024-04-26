@@ -119,10 +119,10 @@ module.exports = {
     name: "messageDeleteBulk",
     async execute(messages, channel, client) {
         const config = await client.configs.get(channel.guild.id);
-        if (config.messageLogChannelId !== "") {
-            const logchannel = await channel.guild.channels.cache.get(config.messageLogChannelId);
+        if (config.channels.messageLog !== "") {
+            const logchannel = await channel.guild.channels.cache.get(config.channels.messageLog);
             if (logchannel) {
-                if (config.messageLogs[2].value) {
+                if (config.moderation.messageLogs.purged) {
                     const array = [...messages.values()];
                     const description = await createDeletedMessagesDescription(array);
                     const chunks = chunkDescription(description);

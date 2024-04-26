@@ -37,10 +37,10 @@ module.exports = {
             }
         }
         if (oldMessage.author.bot) return;
-        if (config.messageLogChannelId !== "") {
-            const channel = await oldMessage.guild.channels.cache.get(config.messageLogChannelId);
+        if (config.channels.messageLog !== "") {
+            const channel = await oldMessage.guild.channels.cache.get(config.channels.messageLog);
             if (channel) {
-                if (config.messageLogs[1].value) {
+                if (config.moderation.messageLogs.edited) {
                     if (oldMessage.content === newMessage.content) return;
                     const embed = new EmbedBuilder()
                         .setAuthor({

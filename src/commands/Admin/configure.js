@@ -8,9 +8,35 @@ const {
     ActionRowBuilder,
     ButtonStyle,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
-const GuildConfig = require("../../models/guildConfiguration");
 const ServerConfig = require("../../models/serverConfigs");
+
+async function checkImage(url) {
+    const res = await fetch(url);
+    const buff = await res.blob();
+
+    return buff.type.startsWith("image/");
+}
+
+const uploadImage = async (url) => {
+    try {
+        const response = await axios.post(
+            "https://api.imgur.com/3/image",
+            {
+                image: url,
+                type: "URL",
+            },
+            {
+                headers: {
+                    Authorization: `Client-ID ${process.env.client_id}`,
+                },
+            }
+        );
+        const imageUrl = response.data.data.link;
+        return imageUrl;
+    } catch {
+        return null;
+    }
+};
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -37,30 +63,6 @@ module.exports = {
                     subcommand
                         .setName("disable-welcome")
                         .setDescription("Disable the welcome channel")
-                )
-                .addSubcommand((subcommand) =>
-                    subcommand
-                        .setName("suggestions-add")
-                        .setDescription("Add a suggestions channel")
-                        .addChannelOption((option) =>
-                            option
-                                .setName("channel")
-                                .setDescription("The channel to add")
-                                .addChannelTypes(ChannelType.GuildText)
-                                .setRequired(true)
-                        )
-                )
-                .addSubcommand((subcommand) =>
-                    subcommand
-                        .setName("suggestions-remove")
-                        .setDescription("Remove a suggestions channel")
-                        .addChannelOption((option) =>
-                            option
-                                .setName("channel")
-                                .setDescription("The channel to remove")
-                                .addChannelTypes(ChannelType.GuildText)
-                                .setRequired(true)
-                        )
                 )
                 .addSubcommand((subcommand) =>
                     subcommand
@@ -476,7 +478,6 @@ module.exports = {
                                 .setName("time")
                                 .setDescription("The time in seconds between experience gain")
                                 .setMinValue(1)
-                                .setMaxValue(60)
                                 .setRequired(true)
                         )
                 )
@@ -572,11 +573,37 @@ module.exports = {
                 .addSubcommand((subcommand) =>
                     subcommand
                         .setName("set-level-message")
-                        .setDescription("Set the level up message")
+                        .setDescription(
+                            "Set the level up message, use {user} and {level} as placeholders"
+                        )
                         .addStringOption((option) =>
                             option
                                 .setName("message")
                                 .setDescription("The message to send when a user levels up")
+                                .setRequired(true)
+                        )
+                )
+                .addSubcommand((subcommand) =>
+                    subcommand
+                        .setName("add-level-restricted-channel")
+                        .setDescription("Experience cannot be gained in these channels")
+                        .addChannelOption((option) =>
+                            option
+                                .setName("channel")
+                                .setDescription("The channel to restrict experience gain")
+                                .addChannelTypes(ChannelType.GuildText)
+                                .setRequired(true)
+                        )
+                )
+                .addSubcommand((subcommand) =>
+                    subcommand
+                        .setName("remove-level-restricted-channel")
+                        .setDescription("Remove a restricted channel")
+                        .addChannelOption((option) =>
+                            option
+                                .setName("channel")
+                                .setDescription("The channel to remove from restricted")
+                                .addChannelTypes(ChannelType.GuildText)
                                 .setRequired(true)
                         )
                 )
@@ -963,13 +990,15 @@ module.exports = {
         const configData = await ServerConfig.findOne({ guildId: guild.id });
         await interaction.deferReply();
         const filter = { guildId: guild.id };
+        // Configured welcome channel, report, member logs, message logs, voice logs, ticket, restricted, blacklisted, minigame
+        // NEED TO DO MODERATION LOGS CHANNEL SETUP LATER
         if (subcommandGroup === "channels") {
             if (subcommand === "set-welcome") {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "welcome" }], new: true }
+                    { $set: { "channels.welcome": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -977,6 +1006,7 @@ module.exports = {
                         .setDescription(`Welcome channel set to ${channel}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -990,8 +1020,8 @@ module.exports = {
             if (subcommand === "disable-welcome") {
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": "" } },
-                    { arrayFilters: [{ "elem.name": "welcome" }], new: true }
+                    { $set: { "channels.welcome": "" } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -999,6 +1029,7 @@ module.exports = {
                         .setDescription("Welcome channel has been disabled")
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1009,59 +1040,12 @@ module.exports = {
                     return interaction.editReply({ embeds: [embed] });
                 }
             }
-            if (subcommand === "suggestions-add") {
-                const channel = options.getChannel("channel");
-                const update = await ServerConfig.findOneAndUpdate(
-                    filter,
-                    { $push: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "suggestions" }], new: true }
-                );
-                if (update) {
-                    const embed = new EmbedBuilder()
-                        .setTitle("Suggestions Channel added")
-                        .setDescription(`Added ${channel} to suggestions channels`)
-                        .setColor("Green")
-                        .setTimestamp();
-                    return interaction.editReply({ embeds: [embed] });
-                } else {
-                    const embed = new EmbedBuilder()
-                        .setTitle("Error")
-                        .setDescription("An error occurred while adding the suggestions channel")
-                        .setColor("Red")
-                        .setTimestamp();
-                    return interaction.editReply({ embeds: [embed] });
-                }
-                return;
-            }
-            if (subcommand === "suggestions-remove") {
-                const channel = options.getChannel("channel");
-                const update = await ServerConfig.findOneAndUpdate(
-                    filter,
-                    { $pull: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "suggestions" }], new: true }
-                );
-                if (update) {
-                    const embed = new EmbedBuilder()
-                        .setTitle("Suggestions Channel removed")
-                        .setDescription(`Removed ${channel} from suggestions channels`)
-                        .setColor("Green")
-                        .setTimestamp();
-                    return interaction.editReply({ embeds: [embed] });
-                } else {
-                    const embed = new EmbedBuilder()
-                        .setTitle("Error")
-                        .setDescription("An error occurred while removing the suggestions channel")
-                        .setColor("Red")
-                        .setTimestamp();
-                    return interaction.editReply({ embeds: [embed] });
-                }
-            }
             if (subcommand === "set-report") {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "report" }], new: true }
+                    { $set: { "channels.report": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1069,6 +1053,7 @@ module.exports = {
                         .setDescription(`Report channel set to ${channel}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1082,8 +1067,8 @@ module.exports = {
             if (subcommand === "disable-report") {
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": "" } },
-                    { arrayFilters: [{ "elem.name": "report" }], new: true }
+                    { $set: { "channels.report": "" } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1091,6 +1076,7 @@ module.exports = {
                         .setDescription("Report channel has been disabled")
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1101,12 +1087,13 @@ module.exports = {
                     return interaction.editReply({ embeds: [embed] });
                 }
             }
+            // will moderation logs later.
             if (subcommand === "set-moderation-logs") {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "modLog" }], new: true }
+                    { $set: { "channels.modLog": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1114,6 +1101,7 @@ module.exports = {
                         .setDescription(`Moderation logs channel set to ${channel}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1129,8 +1117,8 @@ module.exports = {
             if (subcommand === "disable-moderation-logs") {
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": "" } },
-                    { arrayFilters: [{ "elem.name": "modLog" }], new: true }
+                    { $set: { "channels.modLog": "" } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1138,6 +1126,7 @@ module.exports = {
                         .setDescription("Moderation logs channel has been disabled")
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1149,14 +1138,13 @@ module.exports = {
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed] });
                 }
-                return;
             }
             if (subcommand === "set-member-logs") {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "memberLog" }], new: true }
+                    { $set: { "channels.memberLog": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1164,6 +1152,7 @@ module.exports = {
                         .setDescription(`Member logs channel set to ${channel}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1177,8 +1166,8 @@ module.exports = {
             if (subcommand === "disable-member-logs") {
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": "" } },
-                    { arrayFilters: [{ "elem.name": "memberLog" }], new: true }
+                    { $set: { "channels.memberLog": "" } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1186,6 +1175,7 @@ module.exports = {
                         .setDescription("Member logs channel has been disabled")
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1195,14 +1185,13 @@ module.exports = {
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed] });
                 }
-                return;
             }
             if (subcommand === "set-message-logs") {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "messageLog" }], new: true }
+                    { $set: { "channels.messageLog": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1210,6 +1199,7 @@ module.exports = {
                         .setDescription(`Message logs channel set to ${channel}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1219,13 +1209,12 @@ module.exports = {
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed] });
                 }
-                return;
             }
             if (subcommand === "disable-message-logs") {
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": "" } },
-                    { arrayFilters: [{ "elem.name": "messageLog" }], new: true }
+                    { $set: { "channels.messageLog": "" } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1233,6 +1222,7 @@ module.exports = {
                         .setDescription("Message logs channel has been disabled")
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1250,8 +1240,8 @@ module.exports = {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "voiceLog" }], new: true }
+                    { $set: { "channels.voiceLog": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1259,6 +1249,7 @@ module.exports = {
                         .setDescription(`Voice logs channel set to ${channel}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1268,13 +1259,12 @@ module.exports = {
                         .setTimestamp();
                     return interaction.editReply({ embeds: [embed] });
                 }
-                return;
             }
             if (subcommand === "disable-voice-logs") {
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": "" } },
-                    { arrayFilters: [{ "elem.name": "voiceLog" }], new: true }
+                    { $set: { "channels.voiceLog": "" } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1282,6 +1272,7 @@ module.exports = {
                         .setDescription("Voice logs channel has been disabled")
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1303,8 +1294,8 @@ module.exports = {
                 ];
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": array } },
-                    { arrayFilters: [{ "elem.name": "ticket" }], new: true }
+                    { $set: { "channels.ticket": array } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1325,6 +1316,7 @@ module.exports = {
                         .setEmoji("<:MafuyuWhat:1162493558180298893>");
                     const row = new ActionRowBuilder().setComponents(button);
                     await channel.send({ embeds: [ticketEmbed], components: [row] });
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1338,8 +1330,8 @@ module.exports = {
             if (subcommand === "disable-ticket") {
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": [] } },
-                    { arrayFilters: [{ "elem.name": "ticket" }], new: true }
+                    { $set: { "channels.ticket": [] } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1347,6 +1339,7 @@ module.exports = {
                         .setDescription("Ticket system has been disabled")
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1361,8 +1354,8 @@ module.exports = {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "level" }], new: true }
+                    { $set: { "channels.level": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1370,6 +1363,7 @@ module.exports = {
                         .setDescription(`Level system set to ${channel}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1383,8 +1377,8 @@ module.exports = {
             if (subcommand === "disable-level") {
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "channels.$[elem].value": "" } },
-                    { arrayFilters: [{ "elem.name": "level" }], new: true }
+                    { $set: { "channels.level": "" } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1392,6 +1386,7 @@ module.exports = {
                         .setDescription("Level system has been disabled")
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1406,8 +1401,8 @@ module.exports = {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $push: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "restricted" }], new: true }
+                    { $push: { "channels.restricted": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1415,6 +1410,7 @@ module.exports = {
                         .setDescription(`Added ${channel} to restricted channels`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1429,8 +1425,8 @@ module.exports = {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $pull: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "restricted" }], new: true }
+                    { $pull: { "channels.restricted": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1438,6 +1434,7 @@ module.exports = {
                         .setDescription(`Removed ${channel} from restricted channels`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1452,8 +1449,8 @@ module.exports = {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $push: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "blacklisted" }], new: true }
+                    { $push: { "channels.blacklisted": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1461,6 +1458,7 @@ module.exports = {
                         .setDescription(`Added ${channel} to blacklisted channels`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1475,8 +1473,8 @@ module.exports = {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $pull: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "blacklisted" }], new: true }
+                    { $pull: { "channels.blacklisted": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1484,6 +1482,7 @@ module.exports = {
                         .setDescription(`Removed ${channel} from blacklisted channels`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1498,8 +1497,8 @@ module.exports = {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $push: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "minigame" }], new: true }
+                    { $push: { "channels.minigame": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1507,6 +1506,7 @@ module.exports = {
                         .setDescription(`Added ${channel} to minigame channels`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1521,8 +1521,8 @@ module.exports = {
                 const channel = options.getChannel("channel");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $pull: { "channels.$[elem].value": channel.id } },
-                    { arrayFilters: [{ "elem.name": "minigame" }], new: true }
+                    { $pull: { "channels.minigame": channel.id } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1530,6 +1530,7 @@ module.exports = {
                         .setDescription(`Removed ${channel} from minigame channels`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1541,13 +1542,15 @@ module.exports = {
                 }
             }
         }
+        // Warn limit, timeout duration, member logs, message logs, voice logs
+        // NEED TO DO MOD LOGS AND BLACKLISTED WORDS
         if (subcommandGroup === "moderation") {
             if (subcommand === "set-warn-limit") {
                 const limit = options.getInteger("limit");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "moderation.$[elem].value": limit } },
-                    { arrayFilters: [{ "elem.name": "warnLimit" }], new: true }
+                    { $set: { "moderation.warnLimit": limit } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1555,6 +1558,7 @@ module.exports = {
                         .setDescription(`Warn limit set to ${limit}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1571,8 +1575,8 @@ module.exports = {
                 const convertedMiliseconds = minutes * 60000 + hours * 3600000;
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "moderation.$[elem].value": convertedMiliseconds } },
-                    { arrayFilters: [{ "elem.name": "timeoutDuration" }], new: true }
+                    { $set: { "moderation.timeoutDuration": convertedMiliseconds } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1582,6 +1586,7 @@ module.exports = {
                         )
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1605,8 +1610,8 @@ module.exports = {
                 ];
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "moderation.$[elem].value": array } },
-                    { arrayFilters: [{ "elem.name": "modLog" }], new: true }
+                    { $set: { "moderation.modLog": array } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1614,6 +1619,7 @@ module.exports = {
                         .setDescription(`Moderation logs set to ${array}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1635,8 +1641,8 @@ module.exports = {
                 ];
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "moderation.$[elem].value": array } },
-                    { arrayFilters: [{ "elem.name": "memberLog" }], new: true }
+                    { $set: { "moderation.memberLog": array } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1644,6 +1650,7 @@ module.exports = {
                         .setDescription(`Member logs set to ${array}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1665,8 +1672,8 @@ module.exports = {
                 ];
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "moderation.$[elem].value": array } },
-                    { arrayFilters: [{ "elem.name": "messageLog" }], new: true }
+                    { $set: { "moderation.messageLog": array } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1674,6 +1681,7 @@ module.exports = {
                         .setDescription(`Message logs set to ${array}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1695,8 +1703,8 @@ module.exports = {
                 ];
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "moderation.$[elem].value": array } },
-                    { arrayFilters: [{ "elem.name": "voiceLog" }], new: true }
+                    { $set: { "moderation.voiceLog": array } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1704,6 +1712,7 @@ module.exports = {
                         .setDescription(`Voice logs set to ${array}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1718,8 +1727,8 @@ module.exports = {
                 const word = options.getString("word");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $push: { "moderation.$[elem].value": word } },
-                    { arrayFilters: [{ "elem.name": "blacklistedWords" }], new: true }
+                    { $push: { "moderation.blacklistedWords": word } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1727,6 +1736,7 @@ module.exports = {
                         .setDescription(`Added ${word} to blacklisted words`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1741,8 +1751,8 @@ module.exports = {
                 const word = options.getString("word");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $pull: { "moderation.$[elem].value": word } },
-                    { arrayFilters: [{ "elem.name": "blacklistedWords" }], new: true }
+                    { $pull: { "moderation.blacklistedWords": word } },
+                    { new: true }
                 );
                 if (update) {
                     const embed = new EmbedBuilder()
@@ -1750,6 +1760,7 @@ module.exports = {
                         .setDescription(`Removed ${word} from blacklisted words`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1761,12 +1772,13 @@ module.exports = {
                 }
             }
         }
+        // toggle, xp gain, xp requirement, xp scaling, level message, multiplier, ranks
         if (subcommandGroup === "level") {
             if (subcommand === "toggle") {
                 const toggle = options.getBoolean("toggle");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "level.0.enabled": toggle } },
+                    { $set: { "level.enabled": toggle } },
                     { new: true }
                 );
                 if (update) {
@@ -1775,6 +1787,7 @@ module.exports = {
                         .setDescription(`Level system has been toggled to ${toggle}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1793,9 +1806,9 @@ module.exports = {
                     filter,
                     {
                         $set: {
-                            "level.1.xpGainMin": min,
-                            "level.2.xpGainMax": max,
-                            "level.3.xpGainTime": time,
+                            "level.xpGainMin": min,
+                            "level.xpGainMax": max,
+                            "level.xpGainTime": time * 1000,
                         },
                     },
                     { new: true }
@@ -1808,6 +1821,7 @@ module.exports = {
                         )
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1822,7 +1836,7 @@ module.exports = {
                 const base = options.getInteger("base");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "level.4.xpBaseRequirement": base } },
+                    { $set: { "level.xpBaseRequirement": base } },
                     { new: true }
                 );
                 if (update) {
@@ -1831,6 +1845,7 @@ module.exports = {
                         .setDescription(`Experience requirement set to ${base}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1847,7 +1862,7 @@ module.exports = {
                 const types = options.getString("types");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "level.5.xpScaling": types } },
+                    { $set: { "level.xpScaling": types } },
                     { new: true }
                 );
                 if (update) {
@@ -1856,6 +1871,7 @@ module.exports = {
                         .setDescription(`Experience scaling set to ${types}`)
                         .setColor("Green")
                         .setTimestamp();
+                    await client.configs.set(guild.id, update);
                     return interaction.editReply({ embeds: [embed] });
                 } else {
                     const embed = new EmbedBuilder()
@@ -1872,116 +1888,469 @@ module.exports = {
                 const role = options.getRole("role");
                 const imgURL = options.getString("img-url");
                 const imgAttachment = options.getAttachment("img-attachment");
-                return;
+                let hasImg = false;
+                let imageURL = "";
+                if (imgURL && imgAttachment) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(
+                            "Please provide either an image URL or an image attachment, not both"
+                        )
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
+                if (imgURL && !imgAttachment) hasImg = true;
+                if (imgAttachment && !imgURL) hasImg = true;
+                if (hasImg === true) {
+                    if (imgURL) {
+                        const check = await checkImage(imgURL);
+                        if (check === false) {
+                            return interaction.editReply({
+                                content: "Invalid img url has been provided",
+                                ephemeral: true,
+                            });
+                        }
+                        imageURL = imgURL;
+                    } else {
+                        const url = imgAttachment.url;
+                        const check = await checkImage(url);
+                        if (check === false) {
+                            return interaction.editReply({
+                                content: "Invalid img attachment has been provided",
+                                ephemeral: true,
+                            });
+                        }
+                        await uploadImage(url).then(async (imageUrl) => {
+                            if (imageUrl === null) {
+                                return interaction.editReply({
+                                    content: "An error occurred while uploading the image",
+                                    ephemeral: true,
+                                });
+                            } else {
+                                imageURL = imageUrl;
+                            }
+                        });
+                    }
+                }
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    {
+                        $push: {
+                            "level.ranks": {
+                                level: level,
+                                role: role.id,
+                                rankUpMessage: rankUpMessage,
+                                image: imageURL,
+                            },
+                        },
+                    },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Rank Added")
+                        .setDescription(`Added rank for level ${level}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription("An error occurred while adding the rank")
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "remove-rank") {
                 const level = options.getInteger("level");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $pull: { "level.ranks": { level: level } } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Rank Removed")
+                        .setDescription(`Removed rank for level ${level}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription("An error occurred while removing the rank")
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "toggle-multiplier") {
                 const toggle = options.getBoolean("toggle");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "level.multiplier.enabled": toggle } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Multiplier Toggled")
+                        .setDescription(`Multiplier has been toggled to ${toggle}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while toggling the multiplier`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "set-level-message") {
                 const message = options.getString("message");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "level.multiplier.message": message } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Level Message Set")
+                        .setDescription(`Level message set to ${message}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while setting the level message`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
+            }
+            if (subcommand === "add-level-restricted-channel") {
+                const channel = options.getChannel("channel");
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $push: { "level.restricted": channel.id } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Restricted Channel added")
+                        .setDescription(`Added ${channel} to restricted channels`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription("An error occurred while adding the restricted channel")
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
+            }
+            if (subcommand === "remove-level-restricted-channel") {
+                const channel = options.getChannel("channel");
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $pull: { "level.restricted": channel.id } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Restricted Channel removed")
+                        .setDescription(`Removed ${channel} from restricted channels`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription("An error occurred while removing the restricted channel")
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
         }
+        // toggle, currency gain, starting balance
         if (subcommandGroup === "economy") {
             if (subcommand === "toggle") {
                 const toggle = options.getBoolean("toggle");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "economy.enabled": toggle } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Economy Toggled")
+                        .setDescription(`Economy has been toggled to ${toggle}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while toggling the economy`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "currency-name") {
                 const name = options.getString("name");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "economy.currencyName": name } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Currency Name Set")
+                        .setDescription(`Currency name set to ${name}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while setting the currency name`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "currency-symbol") {
                 const symbol = options.getString("symbol");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "economy.currencySymbol": symbol } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Currency Symbol Set")
+                        .setDescription(`Currency symbol set to ${symbol}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while setting the currency symbol`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "currency-gain") {
                 const min = options.getInteger("min");
                 const max = options.getInteger("max");
                 const time = options.getInteger("time");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    {
+                        $set: {
+                            "economy.currencyGainMin": min,
+                            "economy.currencyGainMax": max,
+                            "economy.currencyGainTime": time * 1000,
+                        },
+                    },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Currency Gain Set")
+                        .setDescription(
+                            `Currency gain set to min: ${min}, max: ${max}, time: ${time}`
+                        )
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while setting the currency gain`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "starting-balance") {
                 const amount = options.getInteger("amount");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "economy.startingBalance": amount } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Starting Balance Set")
+                        .setDescription(`Starting balance set to ${amount}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while setting the starting balance`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "daily-reward") {
                 const min = options.getInteger("min");
                 const max = options.getInteger("max");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "economy.dailyRewardMin": min, "economy.dailyRewardMax": max } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Daily Reward Set")
+                        .setDescription(`Daily reward set to min: ${min}, max: ${max}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while setting the daily reward`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "coinflip") {
                 const amount = options.getInteger("amount");
-                return;
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "economy.coinflip": amount } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Coinflip Set")
+                        .setDescription(`Coinflip set to ${amount}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while setting the coinflip`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
             }
             if (subcommand === "minigame") {
                 const amount = options.getInteger("amount");
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "economy.minigame": amount } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Minigame Set")
+                        .setDescription(`Minigame set to ${amount}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while setting the minigame`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
                 return;
             }
+            //DO AFTER IMPLEMENTING OTHER CONFIGS
             if (subcommand === "toggle-multiplier") {
                 const toggle = options.getBoolean("toggle");
                 return;
             }
-            if (subcommand === "configure-multiplier") {
-                const baseCost = options.getInteger("base-cost");
-                const multiplierIncrease = options.getNumber("multiplier-increase");
-                const costScaling = options.getString("cost-scaling");
-                const maxMultiplier = options.getInteger("max-multiplier");
-                return;
-            }
-            if (subcommand === "toggle-custom-roles") {
-                const toggle = options.getBoolean("toggle");
-                return;
-            }
-            if (subcommand === "configure-custom-roles") {
-                const cost = options.getInteger("cost");
-                const role = options.getRole("role");
-                const limit = options.getInteger("limit");
-                return;
-            }
-            if (subcommand === "add-shop-role") {
-                const role = options.getRole("role");
-                const description = options.getString("description");
-                const cost = options.getInteger("cost");
-                return;
-            }
-            if (subcommand === "add-shop-item") {
-                const name = options.getString("name");
-                const description = options.getString("description");
-                const price = options.getInteger("price");
-                const imgURL = options.getString("img-url");
-                const imgAttachment = options.getAttachment("img-attachment");
-                return;
-            }
-            if (subcommand === "remove-shop-item") {
-                const name = options.getString("name");
-                return;
-            }
-            if (subcommand === "remove-shop-role") {
-                const role = options.getRole("role");
-                return;
-            }
-            if (subcommand === "toggle-groups") {
-                const toggle = options.getBoolean("toggle");
-                return;
-            }
-            if (subcommand === "configure-groups") {
-                const groupName = options.getString("group-name");
-                const baseCost = options.getInteger("base-cost");
-                const baseUserLimit = options.getInteger("base-user-limit");
-                const toggleGroupMultiplier = options.getBoolean("toggle-group-multiplier");
-                const baseMultiplierCost = options.getInteger("base-multiplier-cost");
-                const multiplierIncrease = options.getNumber("multiplier-increase");
-                const costScaling = options.getString("cost-scaling");
-                const category = options.getChannel("category");
-                const role = options.getRole("role");
-                return;
-            }
+            // if (subcommand === "configure-multiplier") {
+            //     const baseCost = options.getInteger("base-cost");
+            //     const multiplierIncrease = options.getNumber("multiplier-increase");
+            //     const costScaling = options.getString("cost-scaling");
+            //     const maxMultiplier = options.getInteger("max-multiplier");
+            //     return;
+            // }
+            // if (subcommand === "toggle-custom-roles") {
+            //     const toggle = options.getBoolean("toggle");
+            //     return;
+            // }
+            // if (subcommand === "configure-custom-roles") {
+            //     const cost = options.getInteger("cost");
+            //     const role = options.getRole("role");
+            //     const limit = options.getInteger("limit");
+            //     return;
+            // }
+            // if (subcommand === "add-shop-role") {
+            //     const role = options.getRole("role");
+            //     const description = options.getString("description");
+            //     const cost = options.getInteger("cost");
+            //     return;
+            // }
+            // if (subcommand === "add-shop-item") {
+            //     const name = options.getString("name");
+            //     const description = options.getString("description");
+            //     const price = options.getInteger("price");
+            //     const imgURL = options.getString("img-url");
+            //     const imgAttachment = options.getAttachment("img-attachment");
+            //     return;
+            // }
+            // if (subcommand === "remove-shop-item") {
+            //     const name = options.getString("name");
+            //     return;
+            // }
+            // if (subcommand === "remove-shop-role") {
+            //     const role = options.getRole("role");
+            //     return;
+            // }
+            // if (subcommand === "toggle-groups") {
+            //     const toggle = options.getBoolean("toggle");
+            //     return;
+            // }
+            // if (subcommand === "configure-groups") {
+            //     const groupName = options.getString("group-name");
+            //     const baseCost = options.getInteger("base-cost");
+            //     const baseUserLimit = options.getInteger("base-user-limit");
+            //     const toggleGroupMultiplier = options.getBoolean("toggle-group-multiplier");
+            //     const baseMultiplierCost = options.getInteger("base-multiplier-cost");
+            //     const multiplierIncrease = options.getNumber("multiplier-increase");
+            //     const costScaling = options.getString("cost-scaling");
+            //     const category = options.getChannel("category");
+            //     const role = options.getRole("role");
+            //     return;
+            // }
         }
 
         return;

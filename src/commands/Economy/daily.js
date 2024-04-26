@@ -22,10 +22,13 @@ module.exports = {
         if (config.Economy === false)
             return interaction.reply({ content: "Economy is disabled", ephemeral: true });
         let cooldown = 0;
-        if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
-            cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
         } else cooldown = 1000 * 60 * 60 * 24;
-        await interaction.deferReply();
         const cd = await handleCooldowns(interaction, cooldown);
         if (cd === false) return;
         const data = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
@@ -39,11 +42,15 @@ module.exports = {
         }
         const multi = usermultiplier + groupmultiplier;
         const randomAmount = Math.floor(
-            (Math.random() * (config.dailyMax - config.dailyMin + 1) + config.dailyMin) * multi
+            Math.random() * (config.economy.dailyMax - config.economy.dailyMin + 1) +
+                config.economy.dailyMin
         );
+        let final;
+        if (config.economy.multiplier) final = randomAmount * multi;
+        else final = randomAmount;
         await ProfileModel.findOneAndUpdate(
             { guildId: guild.id, userId: user.id },
-            { $inc: { balance: randomAmount } }
+            { $inc: { balance: final } }
         );
         const embed = new EmbedBuilder()
             .setAuthor({
@@ -51,8 +58,10 @@ module.exports = {
                 iconURL: user.avatarURL(),
             })
             .setColor(interaction.member.displayHexColor)
-            .setDescription(`You have claimed ${randomAmount} ${config.currencyName}!`);
-        await interaction.editReply({ embeds: [embed] });
+            .setDescription(
+                `You have claimed ${final} ${config.economy.currency} ${config.economy.currencySymbol}!`
+            );
+        await interaction.reply({ embeds: [embed] });
         return;
     },
 };

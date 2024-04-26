@@ -20,7 +20,7 @@ module.exports = {
                 .setName("mines")
                 .setDescription("The number of mines there are on the board")
                 .setMinValue(1)
-                .setMaxValue(24)
+                .setMaxValue(23)
         )
         .addIntegerOption((option) =>
             option.setName("bet").setDescription("Place a bet").setMinValue(100).setMaxValue(2000)
@@ -37,13 +37,17 @@ module.exports = {
         let mines = options.getInteger("mines");
         const bet = options.getInteger("bet");
         let cooldown = 0;
-        if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
-            cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
-        } else cooldown = config.defaultMinigameCooldown;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = config.commands.defaultMinigameCooldown;
         const cd = await handleCooldowns(interaction, cooldown);
         if (cd === false) return;
         if (bet) {
-            if (!config.Economy)
+            if (!config.economy.enabled)
                 return interaction.reply({
                     content: "The economy system has been disabled, you cannot place bets",
                     ephemeral: true,
@@ -152,31 +156,33 @@ module.exports = {
             const string = result
                 ? "You won the game! You successfully avoided all the mines."
                 : "You lost the game! Beware of the mines next time!";
+            let extra = config.economy.enabled
+                ? `\n\nHint: The reward for the amount of ${config.economy.currency} ${config.economy.currencySymbol} you win is also affected by the number of mines`
+                : "";
             const embed = new EmbedBuilder()
                 .setColor("Purple")
                 .setTitle("Minesweeper")
-                .setDescription(
-                    `${string}\n\nHint: The reward for the amount of ${config.currencyName} you win is also affected by the number of mines`
-                )
+                .setDescription(`${string} ${extra}`)
                 .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) });
-            if (config.Economy) {
+            if (config.economy.enabled) {
                 const data = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
                 const group = await GroupModel.findOne({ groupMemberIds: user.id });
                 let multi = data.multiplier;
                 if (group) multi += group.groupMultiplier;
                 if (result) {
                     let winnings = 0;
-                    winnings += Math.round(config.minigameReward * multi);
+                    winnings += Math.round(config.economy.minigameReward);
                     if (bet) {
-                        winnings += Math.round(bet * multi);
+                        winnings += Math.round(bet);
                     }
+                    if (config.economy.multiplier) winnings *= multi;
                     if (mines === 1) winnings = 0;
                     else if (mines < 5) winnings * 0.1;
                     else if (mines < 10) winnings * 2;
                     else winnings * 5;
                     data.balance += winnings;
                     await data.save();
-                    let text = `You have won ${winnings} ${config.currencyName}.`;
+                    let text = `You have won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol}.`;
                     if (bet) text += " (Basic reward + bet).";
                     embed.setFooter({ text: text });
                 } else {
@@ -186,7 +192,8 @@ module.exports = {
                         embed.setFooter({ text: `You have lost the bet` });
                     }
                 }
-            } else return interaction.reply({ content: "Economy is disabled", ephemeral: true });
+            } else
+                return interaction.editReply({ content: "Economy is disabled", ephemeral: true });
             return msg.edit({
                 embeds: [embed],
                 components: disableButtons(getComponents(true, result)),

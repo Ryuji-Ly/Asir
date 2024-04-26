@@ -5,7 +5,6 @@ const {
     PermissionFlagsBits,
     ChannelType,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
 
 module.exports = {
     data: new SlashCommandBuilder()

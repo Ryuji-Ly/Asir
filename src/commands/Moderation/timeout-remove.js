@@ -87,9 +87,9 @@ module.exports = {
             .setDescription(
                 [`${target}'s timeout was removed by ${member}`, `\nReason: ${reason}`].join("\n")
             );
-        if (config.modLogs[1].value) {
-            if (config.modLogChannelId !== "") {
-                const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+        if (config.moderation.modLogs.timeout) {
+            if (config.channels.modLog !== "") {
+                const channel = interaction.guild.channels.cache.get(config.channels.modLog);
                 if (!channel) {
                     return;
                 }
