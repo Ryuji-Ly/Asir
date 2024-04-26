@@ -6,7 +6,7 @@ const {
     PermissionFlagsBits,
 } = require("discord.js");
 const canvacord = require("canvacord");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
@@ -21,49 +21,40 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         if (config.level.enabled) {
             await interaction.deferReply();
             let target = options.getUser("user");
             if (!target) target = user;
             const targetObj = await guild.members.fetch(target.id);
-            const data = await ProfileModel.findOne({ userId: target.id, guildId: guild.id });
-            let allLevels = await ProfileModel.find({ guildId: guild.id }).select(
-                "-_id userId level xp"
+            const data = await UserDatabase.findOne({
+                key: { userId: target.id, guildId: guild.id },
+            });
+            let allLevels = await UserDatabase.find({ "key.guildId": guild.id }).select(
+                "-_id key level"
             );
             allLevels.sort((a, b) => {
-                if (a.level === b.level) {
-                    return b.xp - a.xp;
+                if (a.level.level === b.level.level) {
+                    return b.level.xp - a.level.xp;
                 } else {
-                    return b.level - a.level;
+                    return b.level.level - a.level.level;
                 }
             });
-            const currentRank = allLevels.findIndex((lvl) => lvl.userId === target.id) + 1;
+            const currentRank = allLevels.findIndex((lvl) => lvl.key.userId === target.id) + 1;
             let levelRequirement = 0;
             if (config.level.xpScaling === "constant") {
                 levelRequirement = config.level.xpBaseRequirement;
             } else if (config.level.xpScaling === "multiply") {
-                levelRequirement = data.level * config.level.xpBaseRequirement;
+                levelRequirement = data.level.level * config.level.xpBaseRequirement;
             } else if (config.level.xpScaling === "exponential") {
-                levelRequirement = data.level ** 2 * config.level.xpBaseRequirement;
+                levelRequirement = data.level.level ** 2 * config.level.xpBaseRequirement;
             }
             const rank = new canvacord.Rank()
                 .setAvatar(target.displayAvatarURL({ size: 256 }))
                 .setRank(currentRank)
-                .setLevel(data.level)
-                .setCurrentXP(data.xp)
+                .setLevel(data.level.level)
+                .setCurrentXP(data.level.xp)
                 .setRequiredXP(levelRequirement)
                 .setProgressBar("#FFC300", "COLOR")
                 .setUsername(target.displayName)

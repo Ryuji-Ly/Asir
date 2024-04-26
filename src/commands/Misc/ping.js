@@ -9,18 +9,7 @@ module.exports = {
      * @param {Interaction} interaction
      * @param {Client} client
      */
-    async execute(interaction, client) {
-        const config = await client.configs.get(interaction.guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
+    async execute(interaction, client, config) {
         let circles = {
             good: "<:good:1187430882592702464>",
             okay: "<:mid:1187430913160777859>",

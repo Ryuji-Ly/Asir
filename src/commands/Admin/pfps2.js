@@ -4,7 +4,6 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const handleCooldowns = require("../../utils/handleCooldowns");
 const fs = require("fs");
 const fetch = require("node-fetch");
 const JSZIP = require("jszip");
@@ -25,15 +24,8 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         let { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (config.cooldowns.filter((c) => c.name === interaction.commandName).length > 0) {
-            cooldown = config.cooldowns.find((c) => c.name === interaction.commandName).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         await interaction.deferReply();
         if (options.getString("guild-id")) {
             guild = client.guilds.cache.get(options.getString("guild-id"));

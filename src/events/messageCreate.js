@@ -1,6 +1,6 @@
 var colors = require("colors");
 colors.enable();
-const ProfileModel = require("../models/profileSchema");
+const Userdatabase = require("../models/userSchema");
 const GroupModel = require("../models/group");
 const cooldownLevel = new Set();
 const cooldownEconomy = new Set();
@@ -35,20 +35,21 @@ module.exports = {
             message.reply(`<:MafuyuWhat:1162493558180298893>`);
         }
         //check if user data exists and get the user data
-        const user = await ProfileModel.findOne({
-            userId: message.author.id,
-            guildId: message.guild.id,
+        const user = await Userdatabase.findOne({
+            key: { userId: message.author.id, guildId: message.guild.id },
         });
         // update message counter
         try {
-            user.messageCounter += 1;
-            await user.save();
+            await Userdatabase.findOneAndUpdate(
+                { key: { userId: message.author.id, guildId: message.guild.id } },
+                { $inc: { "data.messages": 1 } }
+            );
         } catch (error) {
-            const newUser = await ProfileModel.create({
-                guildId: message.guild.id,
-                userId: message.author.id,
+            const newUser = await Userdatabase.create({
+                key: { userId: message.author.id, guildId: message.guild.id },
+                "economy.wallet": config.economy.baseBalance,
             });
-            newUser.messageCounter = 1;
+            newUser.data.messages = 1;
             await newUser.save();
             const embed = new EmbedBuilder()
                 .setColor("Red")
@@ -66,10 +67,9 @@ module.exports = {
         }
         //if no user, create new user
         if (!user) {
-            const newUser = new ProfileModel({
-                userId: message.author.id,
-                guildId: message.guild.id,
-                balance: config.economy.startingBalance,
+            const newUser = new Userdatabase({
+                key: { userId: message.author.id, guildId: message.guild.id },
+                "economy.wallet": config.economy.startingBalance,
             });
             return await newUser.save();
         }
@@ -77,9 +77,8 @@ module.exports = {
         // leveling logic
         try {
             // all the amount for xp given logic
-            const userdata = await ProfileModel.findOne({
-                guildId: message.guild.id,
-                userId: message.author.id,
+            const userdata = await Userdatabase.findOne({
+                key: { userId: message.author.id, guildId: message.guild.id },
             });
             // checks if economy system is enabled and if yes, adds currency as well
             if (config.economy.enabled) {
@@ -90,7 +89,10 @@ module.exports = {
                 let finalCurrency;
                 if (config.economy.multiplier) finalCurrency = currencyToGive * userdata.multiplier;
                 else finalCurrency = currencyToGive;
-                userdata.balance += finalCurrency;
+                await Userdatabase.findOneAndUpdate(
+                    { key: { userId: message.author.id, guildId: message.guild.id } },
+                    { $inc: { "economy.wallet": finalCurrency } }
+                );
                 cooldownEconomy.add(message.author.id);
                 setTimeout(() => {
                     cooldownEconomy.delete(message.author.id);
@@ -113,20 +115,33 @@ module.exports = {
                 let finalXp;
                 if (config.level.multiplier) finalXp = xpToGive * userdata.multiplier;
                 else finalXp = xpToGive;
-                userdata.xp += finalXp;
+                userdata.level.xp += finalXp;
+                await Userdatabase.findOneAndUpdate(
+                    { key: { userId: message.author.id, guildId: message.guild.id } },
+                    { $set: { "level.xp": userdata.level.xp } }
+                );
                 // all the increase level or not logic
                 let levelRequirement = 0;
                 if (config.level.xpScaling === "constant") {
-                    levelRequirement = config.level.xpBaseRequirement;
+                    levelRequirement = config.level.level.xpBaseRequirement;
                 } else if (config.level.xpScaling === "multiply") {
-                    levelRequirement = userdata.level * config.level.xpBaseRequirement;
+                    levelRequirement = userdata.level.level * config.level.xpBaseRequirement;
                 } else if (config.level.xpScaling === "exponential") {
-                    levelRequirement = userdata.level ** 2 * config.level.xpBaseRequirement;
+                    levelRequirement = userdata.level.level ** 2 * config.level.xpBaseRequirement;
                 }
                 // if user has to be leveled up
-                if (userdata.xp > levelRequirement) {
-                    userdata.xp = userdata.xp - levelRequirement;
-                    userdata.level += 1;
+                if (userdata.level.xp > levelRequirement) {
+                    userdata.level.xp = userdata.level.xp - levelRequirement;
+                    userdata.level.level += 1;
+                    await Userdatabase.findOneAndUpdate(
+                        { key: { userId: message.author.id, guildId: message.guild.id } },
+                        {
+                            $set: {
+                                "level.xp": userdata.level.xp,
+                                "level.level": userdata.level.level,
+                            },
+                        }
+                    );
                     try {
                         // get level up channel
                         let channel;
@@ -142,7 +157,7 @@ module.exports = {
                         // create level up embed
                         const levelMessage = config.level.levelMessage
                             .replace("{user}", message.member)
-                            .replace("{level}", userdata.level);
+                            .replace("{level}", userdata.level.level);
                         const embed = new EmbedBuilder()
                             .setColor(message.member.displayHexColor)
                             .setDescription(levelMessage);
@@ -150,12 +165,12 @@ module.exports = {
                         if (config.level.ranks.length !== 0) {
                             for (let i = 0; i < config.level.ranks.length; i++) {
                                 // check if one of the rank roles are matched
-                                if (config.level.ranks[i].level === userdata.level) {
+                                if (config.level.ranks[i].level === userdata.level.level) {
                                     const roleId = config.level.ranks[i].role;
                                     const role = message.guild.roles.cache.get(roleId);
                                     const rankMessage = config.level.ranks[i].rankUpMessage
                                         .replace("{user}", message.member.user.username)
-                                        .replace("{level}", userdata.level)
+                                        .replace("{level}", userdata.level.level)
                                         .replace("{rank}", role.name);
                                     embed
                                         .setAuthor({
@@ -197,7 +212,6 @@ module.exports = {
                     cooldownLevel.delete(message.author.id);
                 }, config.level.xpGainTime);
             }
-            await userdata.save();
         } catch (error) {
             const embed = new EmbedBuilder()
                 .setColor("Red")

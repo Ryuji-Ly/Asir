@@ -4,8 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
-const handleCooldowns = require("../../utils/handleCooldowns");
+const UserDatabase = require("../../models/userSchema");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -21,38 +20,29 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         const target = options.getUser("user");
         await interaction.deferReply();
         if (target) {
             if (target.bot)
                 return interaction.editReply({ content: "This is a bot", ephemeral: true });
-            const data = await ProfileModel.findOne({ guildId: guild.id, userId: target.id });
+            const data = await UserDatabase.findOne({
+                key: { userId: target.id, guildId: guild.id },
+            });
             const embed = new EmbedBuilder()
                 .setAuthor({
                     name: `Displaying infractions of ${target.username}`,
                     iconURL: target.displayAvatarURL(),
                 })
-                .setFooter({ text: `Current infraction count: ${data.infractions.length}` })
+                .setFooter({ text: `Current infraction count: ${data.data.infractions.length}` })
                 .setColor("Blurple")
                 .setTimestamp();
-            if (data.infractions.length === 0) {
+            if (data.data.infractions.length === 0) {
                 embed.setDescription(`This user has no infractions!`);
             } else {
                 embed.setDescription(
-                    `${data.infractions
+                    `${data.data.infractions
                         .map(
                             (i) =>
                                 `Issued by: <@${i.IssuerId}>. Reason: ${
@@ -64,15 +54,15 @@ module.exports = {
             }
             await interaction.editReply({ embeds: [embed] });
         } else {
-            const alldata = await ProfileModel.find({ guildId: guild.id }).select(
-                "-_id userId warnings infractions"
+            const alldata = await UserDatabase.find({ "key.guildId": guild.id }).select(
+                "-_id key data"
             );
             const data = alldata.filter(
-                (user) => user.warnings !== 0 || user.infractions.length !== 0
+                (user) => user.data.warnings !== 0 || user.data.infractions.length !== 0
             );
             let string = "";
             for (let i = 0; i < data.length; i++) {
-                string += `<@${data[i].userId}> has **${data[i].warnings} warnings and ${data[i].infractions.length} infractions.**\n`;
+                string += `<@${data[i].key.userId}> has **${data[i].data.warnings} warnings and ${data[i].data.infractions.length} infractions.**\n`;
             }
             if (string === "") string = "This server has no warnings or infractions";
             const embed = new EmbedBuilder()

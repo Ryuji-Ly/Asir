@@ -1,6 +1,5 @@
 var colors = require("colors");
 colors.enable();
-const ProfileModel = require("../models/profileSchema");
 const { EmbedBuilder } = require("discord.js");
 const axios = require("axios");
 const uploadImage = async (url) => {

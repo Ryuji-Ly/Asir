@@ -4,8 +4,6 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
-const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -28,19 +26,8 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         const face = options.getInteger("faces") || 6;
         const hidden = options.getBoolean("hidden") || false;
         const num = Math.floor(Math.random() * face) + 1;

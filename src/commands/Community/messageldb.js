@@ -4,7 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
@@ -16,46 +16,35 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         await interaction.deferReply();
-        const userData = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
-        let data = await ProfileModel.find({ guildId: guild.id }).select(
-            "-_id userId messageCounter"
-        );
+        const userData = await UserDatabase.findOne({
+            key: { userId: user.id, guildId: guild.id },
+        });
+        let data = await UserDatabase.find({ "key.guildId": guild.id }).select("-_id key data");
         data.sort((a, b) => {
-            if (a.messageCounter === b.messageCounter) {
-                return a.userId - b.userId;
+            if (a.data.messages === b.data.messages) {
+                return a.key.userId - b.key.userId;
             } else {
-                return b.messageCounter - a.messageCounter;
+                return b.data.messages - a.data.messages;
             }
         });
-        const currentRank = data.findIndex((msg) => msg.userId === user.id) + 1;
+        const currentRank = data.findIndex((msg) => msg.key.userId === user.id) + 1;
         const top = data.slice(0, 10);
         const embed = new EmbedBuilder()
             .setTitle(`**Top 10 most active users**`)
             .setColor("Purple")
             .setTimestamp()
             .setFooter({
-                text: `You are rank ${currentRank}. with ${userData.messageCounter} messages`,
+                text: `You are rank ${currentRank}. with ${userData.data.messages} messages`,
             })
             .setThumbnail(guild.iconURL());
         let desc = "";
         for (let i = 0; i < top.length; i++) {
-            const { user } = await interaction.guild.members.fetch(top[i].userId);
+            const { user } = await interaction.guild.members.fetch(top[i].key.userId);
             if (!user) return;
-            const messagecount = top[i].messageCounter;
+            const messagecount = top[i].data.messages;
             desc += `**${i + 1}.** ${user}**: ${messagecount} messages**\n`;
         }
         embed.setDescription(desc);

@@ -1,10 +1,5 @@
 var colors = require("colors");
 colors.enable();
-const guildConfiguration = require("../models/guildConfiguration");
-const serverConfig = require("../models/serverConfigs");
-const Group = require("../models/group");
-const ProfileModel = require("../models/profileSchema");
-const Suggestion = require("../models/suggestion");
 
 module.exports = {
     name: "guildDelete",

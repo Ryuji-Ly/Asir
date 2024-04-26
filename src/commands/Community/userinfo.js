@@ -4,7 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
@@ -19,62 +19,55 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         const target = options.getUser("user") || user;
         const member = await guild.members.fetch(target.id);
         const icon = target.displayAvatarURL();
         const tag = target.username;
         await interaction.deferReply();
-        const data = await ProfileModel.findOne({ guildId: guild.id, userId: target.id });
+        const data = await UserDatabase.findOne({ key: { userId: target.id, guildId: guild.id } });
         const color = member.displayHexColor;
         const embed = new EmbedBuilder()
             .setAuthor({ name: tag, iconURL: icon })
             .setFooter({ text: `User ID: ${target.id}` })
             .setColor(`${color}`);
 
-        if (config.Level) {
+        if (config.level.enabled) {
             embed.addFields({
                 name: `Level`,
-                value: `${data.level}`,
+                value: `${data.level.level}`,
                 inline: true,
             });
         }
-        if (config.Economy) {
+        if (config.economy.enabled) {
             embed.addFields(
                 {
-                    name: `Balance`,
-                    value: `${data.balance}`,
+                    name: `Wallet`,
+                    value: `${data.economy.wallet} ${config.economy.currencySymbol}`,
                     inline: true,
                 },
                 {
-                    name: "Multiplier",
-                    value: `${data.multiplier}`,
+                    name: `Bank`,
+                    value: `${data.economy.bank} ${config.economy.currencySymbol}`,
                     inline: true,
                 }
             );
         }
-        embed.addFields({ name: `Message count`, value: `${data.messageCounter}`, inline: true });
+        embed.addFields({
+            name: `Message count`,
+            value: `${data.data.messages}`,
+            inline: true,
+        });
         let count = 0;
-        for (let i = 0; i < data.commandCounter.length; i++) {
-            count += data.commandCounter[i].value;
+        for (let i = 0; i < data.data.commands.length; i++) {
+            count += data.data.commands[i].value;
         }
         embed.addFields(
             { name: "Command count", value: `${count}`, inline: true },
             {
                 name: "Warnings & infractions",
-                value: `${data.warnings} warnings. ${data.infractions.length} infractions.`,
+                value: `${data.data.warnings} warnings. ${data.data.infractions.length} infractions.`,
             }
         );
         embed.addFields(

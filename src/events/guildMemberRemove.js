@@ -1,6 +1,6 @@
 var colors = require("colors");
 colors.enable();
-const ProfileModel = require("../models/profileSchema");
+const UserDatabase = require("../models/userSchema");
 const parseMilliseconds = require("parse-ms-2");
 const { EmbedBuilder } = require("discord.js");
 
@@ -8,7 +8,7 @@ module.exports = {
     name: "guildMemberRemove",
     async execute(member, client) {
         if (member.bot) return;
-        await ProfileModel.deleteMany({ guildId: member.guild.id, userId: member.id });
+        await UserDatabase.deleteMany({ key: { userId: member.id, guildId: member.guild.id } });
         const config = await client.configs.get(member.guild.id);
         if (!config) return;
         if (config.channels.welcome !== "") {

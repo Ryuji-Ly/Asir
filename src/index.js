@@ -12,7 +12,6 @@ const {
     IntentsBitField,
 } = require(`discord.js`);
 const { ImgurClient } = require("imgur");
-const GuildConfig = require("./models/guildConfiguration");
 const ServerConfig = require("./models/serverConfigs");
 const fs = require("fs");
 const client = new Client({

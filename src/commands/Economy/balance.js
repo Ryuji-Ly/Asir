@@ -4,7 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const Userdatabase = require("../../models/userSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
 
 const command = {
@@ -16,28 +16,15 @@ const command = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
         await interaction.deferReply();
-        const config = await client.configs.get(guild.id);
-        if (!config.economy.enabled)
-            return interaction.reply({ content: "Economy is disabled", ephemeral: true });
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
-        const data = await ProfileModel.findOne({ userId: user.id, guildId: guild.id });
+        const data = await Userdatabase.findOne({ key: { userId: user.id, guildId: guild.id } });
         const embed = new EmbedBuilder()
             .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
             .setColor(interaction.member.displayHexColor)
             .setDescription(
-                `You're current balance is ${data.balance} ${config.economy.currency} ${config.economy.currencySymbol}!`
+                `You're current wallet balance is ${data.economy.wallet} ${config.economy.currency} ${config.economy.currencySymbol}!\nYou're current bank balance is ${data.economy.bank} ${config.economy.currency} ${config.economy.currencySymbol}!`
             );
         await interaction.editReply({ embeds: [embed] });
         return;

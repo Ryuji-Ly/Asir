@@ -4,7 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const Userdatabase = require("../../models/userSchema");
 var colors = require("colors");
 const handleCooldowns = require("../../utils/handleCooldowns");
 colors.enable();
@@ -25,18 +25,7 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
-        const config = await client.configs.get(interaction.guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
+    async execute(interaction, client, config) {
         const user = interaction.options.getMember("user");
         const reason = interaction.options.getString("reason") || "No reason given";
         if (user.user.bot) return interaction.reply({ content: "This is a bot", ephemeral: true });
@@ -47,9 +36,10 @@ module.exports = {
                 content: "This user cannot be warned by you or me",
                 ephemeral: true,
             });
-        const data = await ProfileModel.findOne({ guildId: interaction.guild.id, userId: user.id });
-        if (data.warnings + 1 === config.moderation.warnLimit) {
-            data.warnings = 0;
+        const data = await Userdatabase.findOne({
+            key: { userId: user.id, guildId: interaction.guild.id },
+        });
+        if (data.data.warnings + 1 === config.moderation.warnLimit) {
             await user
                 .timeout(
                     config.moderation.timeoutDuration,
@@ -64,8 +54,13 @@ module.exports = {
                 Reason: "Automated timeout",
                 Date: Date.now(),
             };
-            data.infractions.push(newInfractionObject);
-            await data.save();
+            await Userdatabase.findOneAndUpdate(
+                { key: { userId: user.id, guildId: interaction.guild.id } },
+                {
+                    $set: { "data.warnings": 0 },
+                    $push: { "data.infractions": newInfractionObject },
+                }
+            );
             const embed = new EmbedBuilder()
                 .setAuthor({
                     name: `${interaction.user.displayName}`,
@@ -91,7 +86,13 @@ module.exports = {
             });
             await interaction.channel.send({ embeds: [embed] });
         } else {
-            data.warnings += 1;
+            data.data.warnings += 1;
+            await Userdatabase.findOneAndUpdate(
+                { key: { userId: user.id, guildId: interaction.guild.id } },
+                {
+                    $set: { "data.warnings": data.data.warnings },
+                }
+            );
             const embed = new EmbedBuilder()
                 .setAuthor({
                     name: `${interaction.user.displayName}`,

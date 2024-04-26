@@ -9,7 +9,6 @@ const {
     ButtonStyle,
 } = require("discord.js");
 const ServerConfig = require("../../models/serverConfigs");
-const handleCooldowns = require("../../utils/handleCooldowns");
 
 async function checkImage(url) {
     const res = await fetch(url);
@@ -983,22 +982,10 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         const subcommandGroup = options.getSubcommandGroup();
         const subcommand = options.getSubcommand();
-        const configData = await ServerConfig.findOne({ guildId: guild.id });
         await interaction.deferReply();
         const filter = { guildId: guild.id };
         // Configured welcome channel, report, member logs, message logs, voice logs, ticket, restricted, blacklisted, minigame

@@ -1,6 +1,6 @@
 var colors = require("colors");
 colors.enable();
-const ProfileModel = require("../models/profileSchema");
+const UserDatabase = require("../models/userSchema");
 const { EmbedBuilder } = require("discord.js");
 
 module.exports = {
@@ -9,10 +9,9 @@ module.exports = {
         if (member.user.bot) return;
         else {
             const config = await client.configs.get(member.guild.id);
-            const newUser = await ProfileModel.create({
-                userId: member.user.id,
-                guildId: member.guild.id,
-                balance: config.economy.baseBalance,
+            const newUser = await UserDatabase.create({
+                key: { userId: member.user.id, guildId: member.guild.id },
+                "economy.wallet": config.economy.baseBalance,
             });
             await newUser.save();
             if (config.channels.welcome !== "") {

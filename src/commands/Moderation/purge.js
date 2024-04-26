@@ -29,18 +29,7 @@ module.exports = {
      * @param {Interaction} interaction
      * @param {Client} client
      */
-    async execute(interaction, client) {
-        const config = await client.configs.get(interaction.guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
+    async execute(interaction, client, config) {
         let number = interaction.options.getInteger("amount");
         const embed = new EmbedBuilder()
             .setColor("Purple")

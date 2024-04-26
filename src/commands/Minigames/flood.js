@@ -6,6 +6,7 @@ const {
     ButtonStyle,
     ActionRowBuilder,
 } = require("discord.js");
+const UserDatabase = require("../../models/userSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
@@ -25,19 +26,8 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, user, guild } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         await interaction.deferReply();
         const squares = ["🟥", "🟧", "🟩", "🟦", "🟪"];
         let length = options.getInteger("length");

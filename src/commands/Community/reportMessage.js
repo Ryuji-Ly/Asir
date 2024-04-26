@@ -4,7 +4,6 @@ const {
     Interaction,
     EmbedBuilder,
 } = require("discord.js");
-const guildConfiguration = require("../../models/guildConfiguration");
 module.exports = {
     data: new ContextMenuCommandBuilder()
         .setName("Report Message")

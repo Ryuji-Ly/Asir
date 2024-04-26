@@ -4,7 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 const GroupModel = require("../../models/group");
 const parseMilliseconds = require("parse-ms-2");
 const handleCooldowns = require("../../utils/handleCooldowns");
@@ -16,22 +16,9 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        if (config.Economy === false)
-            return interaction.reply({ content: "Economy is disabled", ephemeral: true });
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 1000 * 60 * 60 * 24;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
-        const data = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
+        const data = await UserDatabase.findOne({ key: { userId: user.id, guildId: guild.id } });
         const usermultiplier = data.multiplier;
         const groupdata = await GroupModel.findOne({
             groupMemberIds: interaction.user.id,
@@ -48,9 +35,9 @@ module.exports = {
         let final;
         if (config.economy.multiplier) final = randomAmount * multi;
         else final = randomAmount;
-        await ProfileModel.findOneAndUpdate(
-            { guildId: guild.id, userId: user.id },
-            { $inc: { balance: final } }
+        await UserDatabase.findOneAndUpdate(
+            { key: { userId: user.id, guildId: guild.id } },
+            { $inc: { "economy.wallet": final } }
         );
         const embed = new EmbedBuilder()
             .setAuthor({

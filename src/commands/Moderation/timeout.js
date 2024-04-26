@@ -4,7 +4,7 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 const ms = require("ms");
 var colors = require("colors");
 const handleCooldowns = require("../../utils/handleCooldowns");
@@ -32,20 +32,9 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         await interaction.deferReply();
         const { options, guild, member } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         const target = options.getMember("user");
         let duration = options.getString("duration");
         const reason = options.getString("reason") || "No reason given.";
@@ -103,9 +92,12 @@ module.exports = {
             Reason: reason,
             Date: Date.now(),
         };
-        const data = await ProfileModel.findOne({ guildId: guild.id, userId: target.id });
-        data.infractions.push(newInfractionObject);
-        await data.save();
+        await UserDatabase.findOneAndUpdate(
+            { key: { userId: target.id, guildId: guild.id } },
+            {
+                $push: { "data.infractions": newInfractionObject },
+            }
+        );
         const successEmbed = new EmbedBuilder()
             .setAuthor({ name: "Timeout issued", iconURL: guild.iconURL() })
             .setColor("Red")
@@ -114,7 +106,7 @@ module.exports = {
                     `${target} was issued a timeout for **${ms(ms(duration), {
                         long: true,
                     })}** by ${member}`,
-                    `Bringing their infractions total to **${data.infractions.length} points**`,
+                    `Bringing their infractions total to **${data.data.infractions.length} points**`,
                     `\nReason: ${reason}`,
                 ].join("\n")
             );
@@ -136,7 +128,7 @@ module.exports = {
                             ms(duration),
                             { long: true }
                         )}\n**Reason:** ${reason}\n**Total infractions:** ${
-                            data.infractions.length
+                            data.data.infractions.length
                         }`
                     )
                     .setTimestamp();

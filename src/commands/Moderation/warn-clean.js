@@ -4,7 +4,8 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
+const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -19,22 +20,14 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
-        const config = await client.configs.get(interaction.guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
+    async execute(interaction, client, config) {
         const user = interaction.options.getMember("user");
-        const data = await ProfileModel.findOne({ guildId: interaction.guild.id, userId: user.id });
-        data.warnings = 0;
-        await data.save();
+        await UserDatabase.findOneAndUpdate(
+            { key: { userId: user.id, guildId: interaction.guild.id } },
+            {
+                $set: { "data.warnings": 0 },
+            }
+        );
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: `${interaction.user.displayName}`,
@@ -43,9 +36,9 @@ module.exports = {
             .setColor("Green")
             .setDescription(`${user}'s warnings has been purged`)
             .setTimestamp();
-        if (config.modLogs[0].value) {
-            if (config.modLogChannelId !== "") {
-                const channel = interaction.guild.channels.cache.get(config.modLogChannelId);
+        if (config.moderation.modLogs.warn) {
+            if (config.channels.modLog !== "") {
+                const channel = interaction.guild.channels.cache.get(config.channels.modLog);
                 if (!channel) {
                     return;
                 }

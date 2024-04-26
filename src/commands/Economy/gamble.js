@@ -6,7 +6,7 @@ const {
     ActionRowBuilder,
     ButtonBuilder,
 } = require("discord.js");
-const profileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
@@ -40,27 +40,16 @@ module.exports = {
                 )
         ),
 
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, user, guild } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         const gambleCommand = options.getSubcommand();
-        const data = await profileModel.findOne({ userId: user.id, guildId: guild.id });
+        const data = await UserDatabase.findOne({ key: { userId: user.id, guildId: guild.id } });
         const gambleEmbed = new EmbedBuilder().setColor(0x00aa6d);
         if (config.economy.enabled === false)
             return interaction.reply({ content: "Economy is disabled", ephemeral: true });
         if (gambleCommand === "three-doors") {
             const amount = options.getInteger("amount");
-            if (data.balance < amount) {
+            if (data.economy.wallet < amount) {
                 await interaction.deferReply({ ephemeral: true });
                 return await interaction.editReply(
                     `You don't have ${amount} ${config.economy.currency} ${config.economy.currencySymbol} to gamble with`
@@ -148,9 +137,12 @@ module.exports = {
 
                 const label = choice.data.label;
                 const amtChange = getAmount(label, amount);
-                data.balance += amtChange;
+                data.economy.wallet += amtChange;
                 await data.save();
-
+                await UserDatabase.findOneAndUpdate(
+                    { key: { userId: user.id, guildId: guild.id } },
+                    { $inc: { "economy.wallet": amtChange } }
+                );
                 if (label === double) {
                     gambleEmbed
                         .setTitle("You just 2.4x'd your bet")
@@ -174,7 +166,9 @@ module.exports = {
                             }`
                         );
                 }
-                gambleEmbed.setFooter({ text: `${user.username}'s new balance: ${data.balance}` });
+                gambleEmbed.setFooter({
+                    text: `${user.username}'s new wallet: ${data.economy.wallet}`,
+                });
 
                 await i.update({ embeds: [gambleEmbed], components: [row] });
                 collector.stop();
@@ -183,7 +177,7 @@ module.exports = {
 
         if (gambleCommand === "slots") {
             const amount = options.getInteger("amount");
-            if (data.balance < amount) {
+            if (data.economy.wallet < amount) {
                 await interaction.deferReply({ ephemeral: true });
                 return await interaction.editReply(
                     `You don't have ${amount} ${config.economy.currency} ${config.economy.currencySymbol} to gamble with`
@@ -301,8 +295,12 @@ module.exports = {
                     } else {
                         winnings = -amount;
                     }
-                    data.balance += winnings;
+                    data.economy.wallet += winnings;
                     await data.save();
+                    await UserDatabase.findOneAndUpdate(
+                        { key: { userId: user.id, guildId: guild.id } },
+                        { $inc: { "economy.wallet": winnings } }
+                    );
                     const resultMessage = win
                         ? `You won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} with ${symbol} combination!`
                         : "Sorry, you didn't win this time.";
@@ -315,7 +313,7 @@ module.exports = {
                                 .join("\n")}\n\n${resultMessage}`
                         )
                         .setFooter({
-                            text: `${user.username}'s new balance: ${data.balance} ${config.economy.currency} ${config.economy.currencySymbol}`,
+                            text: `${user.username}'s new wallet: ${data.economy.wallet} ${config.economy.currency} ${config.economy.currencySymbol}`,
                         });
 
                     await i.update({ embeds: [gambleEmbed], components: [row] });

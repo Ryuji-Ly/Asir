@@ -1,5 +1,5 @@
 const { Interaction } = require("discord.js");
-const ProfileModel = require("../models/profileSchema");
+const UserDatabase = require("../models/userSchema");
 const parseMilliseconds = require("parse-ms-2");
 
 /**
@@ -17,15 +17,13 @@ const handleCooldowns = async (interaction, cooldown) => {
     if (subname !== "") value = `${interaction.commandName} ${subname}`;
     const name = `${value}`;
     //checking if cooldown exists
-    let data = await ProfileModel.findOne({
-        guildId: interaction.guild.id,
-        userId: interaction.user.id,
+    let data = await UserDatabase.findOne({
+        key: { guildId: interaction.guild.id, userId: interaction.user.id },
         "cooldowns.name": `${name}`,
     });
     if (!data) {
-        data = await ProfileModel.findOne({
-            guildId: interaction.guild.id,
-            userId: interaction.user.id,
+        data = await UserDatabase.findOne({
+            key: { userId: interaction.user.id, guildId: interaction.guild.id },
         });
         const newCooldown = {
             name: name,
@@ -34,9 +32,8 @@ const handleCooldowns = async (interaction, cooldown) => {
         data.cooldowns.push(newCooldown);
         await data.save();
     }
-    const user = await ProfileModel.findOne({
-        guildId: interaction.guildId,
-        userId: interaction.user.id,
+    const user = await UserDatabase.findOne({
+        key: { userId: interaction.user.id, guildId: interaction.guildId },
     });
     const lastUsed = await user.cooldowns.find((c) => c.name === name).value;
     const timeLeft = cooldown - (Date.now() - lastUsed);
@@ -61,8 +58,8 @@ const handleCooldowns = async (interaction, cooldown) => {
             );
         return false;
     } else {
-        await ProfileModel.findOneAndUpdate(
-            { guildId: interaction.guild.id, userId: interaction.user.id },
+        await UserDatabase.findOneAndUpdate(
+            { key: { userId: interaction.user.id, guildId: interaction.guild.id } },
             { $set: { "cooldowns.$[x].value": Date.now() } },
             { arrayFilters: [{ "x.name": name }] }
         );

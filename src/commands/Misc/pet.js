@@ -5,7 +5,6 @@ const {
     PermissionFlagsBits,
     AttachmentBuilder,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
 const petPetGif = require("pet-pet-gif");
 async function checkImage(url) {
@@ -39,9 +38,8 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
         let avatar;
         let userAv;
         const userA = options.getUser("user");
@@ -89,16 +87,6 @@ module.exports = {
                 ephemeral: true,
             });
         }
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         const animatedGif = await petPetGif(avatar);
         const gif = new AttachmentBuilder(animatedGif, { name: "pet.gif" });
         await interaction.reply({ files: [gif] });

@@ -8,8 +8,7 @@ const {
     ButtonStyle,
     ActionRowBuilder,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
-const handleCooldowns = require("../../utils/handleCooldowns");
+const Userdatabase = require("../../models/userSchema");
 
 module.exports = {
     data: new SlashCommandBuilder().setName("2048").setDescription("Play a game of 2048"),
@@ -18,20 +17,8 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        //cooldown
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = config.commands.defaultMinigameCooldown;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         await interaction.deferReply();
         //constants and variables
         const emojis = { up: "⬆️", down: "⬇️", left: "⬅️", right: "➡️" };
@@ -161,9 +148,11 @@ module.exports = {
             let multi = 0.2;
             if (result === true) multi = 5;
             const winnings = Math.floor(score * multi);
-            const data = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
-            data.balance += winnings;
             await data.save();
+            await Userdatabase.findOneAndUpdate(
+                { key: { userId: user.id, guildId: guild.id } },
+                { $inc: { "economy.wallet": winnings } }
+            );
             let string = "";
             if (result === true)
                 string = `Congratulations! You have won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} !`;

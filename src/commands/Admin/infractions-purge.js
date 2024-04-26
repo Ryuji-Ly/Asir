@@ -5,7 +5,6 @@ const {
     PermissionFlagsBits,
 } = require("discord.js");
 const UserDatabase = require("../../models/userSchema");
-const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -23,19 +22,8 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         const target = options.getUser("user");
         if (target.bot) return interaction.reply({ content: "This is a bot", ephemeral: true });
         // const data = await ProfileModel.findOne({ userId: target.id, guildId: guild.id });

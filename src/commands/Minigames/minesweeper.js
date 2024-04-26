@@ -6,7 +6,7 @@ const {
     ButtonBuilder,
     ActionRowBuilder,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
 const GroupModel = require("../../models/group");
 const handleCooldowns = require("../../utils/handleCooldowns");
 const parseMilliseconds = require("parse-ms-2");
@@ -30,26 +30,23 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
         //constants + gameboard + cooldowns
         let mines = options.getInteger("mines");
         const bet = options.getInteger("bet");
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = config.commands.defaultMinigameCooldown;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         if (bet) {
             if (!config.economy.enabled)
                 return interaction.reply({
                     content: "The economy system has been disabled, you cannot place bets",
+                    ephemeral: true,
+                });
+            const userData = await UserDatabase.findOne({
+                key: { userId: user.id, guildId: guild.id },
+            });
+            if (userData.economy.wallet < bet)
+                return interaction.reply({
+                    content: `You don't have enough ${config.economy.currency} ${config.economy.currencySymbol} to place that bet`,
                     ephemeral: true,
                 });
         }
@@ -165,7 +162,9 @@ module.exports = {
                 .setDescription(`${string} ${extra}`)
                 .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL({ dynamic: true }) });
             if (config.economy.enabled) {
-                const data = await ProfileModel.findOne({ guildId: guild.id, userId: user.id });
+                const data = await UserDatabase.findOne({
+                    key: { userId: user.id, guildId: guild.id },
+                });
                 const group = await GroupModel.findOne({ groupMemberIds: user.id });
                 let multi = data.multiplier;
                 if (group) multi += group.groupMultiplier;
@@ -180,15 +179,23 @@ module.exports = {
                     else if (mines < 5) winnings * 0.1;
                     else if (mines < 10) winnings * 2;
                     else winnings * 5;
-                    data.balance += winnings;
+                    data.economy.wallet += winnings;
                     await data.save();
+                    await UserDatabase.findOneAndUpdate(
+                        { key: { userId: user.id, guildId: guild.id } },
+                        { $inc: { "economy.wallet": winnings } }
+                    );
                     let text = `You have won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol}.`;
                     if (bet) text += " (Basic reward + bet).";
                     embed.setFooter({ text: text });
                 } else {
                     if (bet) {
-                        data.balance -= bet;
+                        data.economy.wallet -= bet;
                         await data.save();
+                        await UserDatabase.findOneAndUpdate(
+                            { key: { userId: user.id, guildId: guild.id } },
+                            { $inc: { "economy.wallet": -bet } }
+                        );
                         embed.setFooter({ text: `You have lost the bet` });
                     }
                 }

@@ -29,19 +29,8 @@ module.exports = {
      *
      * @param {Interaction} interaction
      */
-    async execute(interaction, client) {
+    async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const config = await client.configs.get(guild.id);
-        let cooldown = 0;
-        if (
-            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
-        ) {
-            cooldown = config.commands.cooldowns.find(
-                (c) => c.name === interaction.commandName
-            ).value;
-        } else cooldown = 0;
-        const cd = await handleCooldowns(interaction, cooldown);
-        if (cd === false) return;
         if (user.id !== "348902272534839296") {
             return interaction.reply({
                 content: "This command is only available for ryujily",
@@ -56,7 +45,9 @@ module.exports = {
         );
         const embed = new EmbedBuilder()
             .setColor("Purple")
-            .setDescription(`You have set ${target}'s balance to ${amount} ${config.currencyName}`);
+            .setDescription(
+                `You have set ${target}'s balance to ${amount} ${config.economy.currency} ${config.economy.currencySymbol}`
+            );
         interaction.reply({ embeds: [embed] });
         return;
     },

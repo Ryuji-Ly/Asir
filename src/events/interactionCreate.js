@@ -8,11 +8,9 @@ const {
     ChannelType,
     ActionRowBuilder,
 } = require("discord.js");
-const ProfileModel = require("../models/profileSchema");
-const whitelist = ["348902272534839296"];
-const TicketModel = require("../models/ticket");
-const ServerConfig = require("../models/serverConfigs");
+const UserDatabase = require("../models/userSchema");
 var colors = require("colors");
+const handleCooldowns = require("../utils/handleCooldowns");
 colors.enable();
 const mapTypes = {
     plains: 0,
@@ -231,16 +229,6 @@ module.exports = {
                         });
                 }
             }
-            let data = await ProfileModel.findOne({
-                guildId: interaction.guild.id,
-                userId: interaction.user.id,
-            });
-            if (!data) {
-                data = await ProfileModel.create({
-                    guildId: interaction.guild.id,
-                    userId: interaction.user.id,
-                });
-            }
             if (!interaction.isCommand()) return;
             //checking if command is disabled
             if (config.commands.disabled.includes(interaction.commandName)) {
@@ -255,12 +243,12 @@ module.exports = {
                     content: "You are blacklisted from all commands",
                     ephemeral: true,
                 });
-            //checking if a command is blacklisted for a user or not
-            if (data.blacklistedCommands.includes(interaction.commandName))
-                return interaction.reply({
-                    content: "You are blacklisted from this command",
-                    ephemeral: true,
-                });
+            // //checking if a command is blacklisted for a user or not
+            // if (data.blacklistedCommands.includes(interaction.commandName))
+            //     return interaction.reply({
+            //         content: "You are blacklisted from this command",
+            //         ephemeral: true,
+            //     });
 
             const command = client.commands.get(interaction.commandName);
             if (!command) return;
@@ -282,19 +270,6 @@ module.exports = {
                     }
                 }
             }
-
-            //check if user data exists
-            const user = await ProfileModel.findOne({
-                userId: interaction.user.id,
-                guildId: interaction.guild.id,
-            });
-            if (!user) {
-                const newUser = new ProfileModel({
-                    userId: interaction.user.id,
-                    guildId: interaction.guild.id,
-                });
-                await newUser.save();
-            }
             //update commands counter
             try {
                 let subname = "";
@@ -306,31 +281,15 @@ module.exports = {
                 let value = interaction.commandName;
                 if (subname !== "") value = `${interaction.commandName} ${subname}`;
                 const name = `${value}`;
-                const data = await ProfileModel.findOne({
-                    userId: interaction.user.id,
-                    guildId: interaction.guild.id,
-                    "commandCounter.name": `${name}`,
-                });
-                if (!data) {
-                    const newCommand = await ProfileModel.findOne({
-                        userId: interaction.user.id,
-                        guildId: interaction.guild.id,
-                    });
-                    const newCommandCounter = {
-                        name: `${name}`,
-                        value: 0,
-                    };
-                    newCommand.commandCounter.push(newCommandCounter);
-                    await newCommand.save();
-                }
-                await ProfileModel.findOneAndUpdate(
+                const update = await UserDatabase.findOneAndUpdate(
                     {
-                        userId: interaction.user.id,
-                        guildId: interaction.guild.id,
-                        "commandCounter.name": `${name}`,
+                        key: { userId: interaction.user.id, guildId: interaction.guild.id },
+                        "data.commands.name": { $ne: `${name}` },
                     },
                     {
-                        $inc: { "commandCounter.$[x].value": 1 },
+                        $inc: {
+                            "data.commands.$[x].value": 1,
+                        },
                     },
                     {
                         arrayFilters: [
@@ -338,8 +297,23 @@ module.exports = {
                                 "x.name": `${name}`,
                             },
                         ],
+                        new: true,
                     }
                 );
+                if (!update)
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: { userId: interaction.user.id, guildId: interaction.guild.id },
+                        },
+                        {
+                            $push: {
+                                "data.commands": {
+                                    name: `${name}`,
+                                    value: 1,
+                                },
+                            },
+                        }
+                    );
             } catch (error) {
                 const embed = new EmbedBuilder()
                     .setColor("Red")
@@ -352,9 +326,34 @@ module.exports = {
                 });
                 console.log("[INTERACTION CREATE] error with updating command counter".red);
             }
+            //check for cooldowns
+            try {
+                let cooldown = 0;
+                if (
+                    config.commands.cooldowns.filter((c) => c.name === interaction.commandName)
+                        .length > 0
+                ) {
+                    cooldown = config.commands.cooldowns.find(
+                        (c) => c.name === interaction.commandName
+                    ).value;
+                } else cooldown = 0;
+                if (
+                    interaction.commandName === "2048" ||
+                    interaction.commandName === "blackjack" ||
+                    interaction.commandName === "flood" ||
+                    interaction.commandName === "minesweeper" ||
+                    interaction.commandName === "trivia"
+                )
+                    cooldown = config.commands.defaultMinigameCooldown;
+                if (interaction.commandName === "daily") cooldown = 1000 * 60 * 60 * 24;
+                const cd = await handleCooldowns(interaction, cooldown);
+                if (cd === false) return;
+            } catch (error) {
+                console.log(`[INTERACTION CREATE] Error with cooldowns ${error.stack}`.red);
+            }
             //execute the command
             try {
-                await command.execute(interaction, client);
+                await command.execute(interaction, client, config);
             } catch (error) {
                 const embed = new EmbedBuilder()
                     .setColor("Red")
