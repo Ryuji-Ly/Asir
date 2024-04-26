@@ -7,6 +7,7 @@ const {
 const ProfileModel = require("../../models/profileSchema");
 const ms = require("ms");
 var colors = require("colors");
+const handleCooldowns = require("../../utils/handleCooldowns");
 colors.enable();
 
 module.exports = {
@@ -29,6 +30,16 @@ module.exports = {
         await interaction.deferReply();
         const { options, guild, member } = interaction;
         const config = await client.configs.get(guild.id);
+        let cooldown = 0;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = 0;
+        const cd = await handleCooldowns(interaction, cooldown);
+        if (cd === false) return;
         const target = options.getMember("user");
         const reason = options.getString("reason") || "No reason given.";
         const targetUserRolePosition = target.roles.highest.position; // Highest role of the target user

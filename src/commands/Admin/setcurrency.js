@@ -4,7 +4,8 @@ const {
     EmbedBuilder,
     PermissionFlagsBits,
 } = require("discord.js");
-const ProfileModel = require("../../models/profileSchema");
+const UserDatabase = require("../../models/userSchema");
+const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -31,6 +32,16 @@ module.exports = {
     async execute(interaction, client) {
         const { options, guild, user } = interaction;
         const config = await client.configs.get(guild.id);
+        let cooldown = 0;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = 0;
+        const cd = await handleCooldowns(interaction, cooldown);
+        if (cd === false) return;
         if (user.id !== "348902272534839296") {
             return interaction.reply({
                 content: "This command is only available for ryujily",
@@ -39,9 +50,9 @@ module.exports = {
         }
         const target = options.getUser("user");
         const amount = options.getInteger("amount");
-        await ProfileModel.findOneAndUpdate(
-            { guildId: guild.id, userId: target.id },
-            { $set: { balance: amount } }
+        await UserDatabase.findOneAndUpdate(
+            { key: { userId: target.id, guildId: guild.id } },
+            { economy: { wallet: amount } }
         );
         const embed = new EmbedBuilder()
             .setColor("Purple")

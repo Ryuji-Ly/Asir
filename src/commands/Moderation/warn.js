@@ -6,6 +6,7 @@ const {
 } = require("discord.js");
 const ProfileModel = require("../../models/profileSchema");
 var colors = require("colors");
+const handleCooldowns = require("../../utils/handleCooldowns");
 colors.enable();
 
 module.exports = {
@@ -26,6 +27,16 @@ module.exports = {
      */
     async execute(interaction, client) {
         const config = await client.configs.get(interaction.guild.id);
+        let cooldown = 0;
+        if (
+            config.commands.cooldowns.filter((c) => c.name === interaction.commandName).length > 0
+        ) {
+            cooldown = config.commands.cooldowns.find(
+                (c) => c.name === interaction.commandName
+            ).value;
+        } else cooldown = 0;
+        const cd = await handleCooldowns(interaction, cooldown);
+        if (cd === false) return;
         const user = interaction.options.getMember("user");
         const reason = interaction.options.getString("reason") || "No reason given";
         if (user.user.bot) return interaction.reply({ content: "This is a bot", ephemeral: true });

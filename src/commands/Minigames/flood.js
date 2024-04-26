@@ -6,6 +6,7 @@ const {
     ButtonStyle,
     ActionRowBuilder,
 } = require("discord.js");
+const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
     data: new SlashCommandBuilder()

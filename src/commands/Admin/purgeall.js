@@ -58,9 +58,9 @@ module.exports = {
                     components: [],
                 });
                 const data = await ProfileModel.find({
-                    guildId: guild.id,
-                    infractions: { $exists: true, $ne: [] },
-                    warnings: { $gt: 0 },
+                    key: { guildId: guild.id },
+                    "data.infractions": { $exists: true, $ne: [] },
+                    "data.warnings": { $gt: 0 },
                 });
                 if (data.length === 0)
                     return interaction.editReply({
