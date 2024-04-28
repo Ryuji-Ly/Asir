@@ -176,9 +176,10 @@ module.exports = {
                     }
                     if (config.economy.multiplier) winnings *= multi;
                     if (mines === 1) winnings = 0;
-                    else if (mines < 5) winnings * 0.1;
-                    else if (mines < 10) winnings * 2;
-                    else winnings * 5;
+                    else if (mines < 5) winnings *= 0.01;
+                    else if (mines === 5) winnings *= 1;
+                    else if (mines < 10) winnings *= 5;
+                    else winnings *= 10;
                     data.economy.wallet += winnings;
                     await data.save();
                     await UserDatabase.findOneAndUpdate(

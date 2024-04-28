@@ -63,8 +63,10 @@ module.exports = {
             await UserDatabase.findOneAndUpdate(
                 { key: { userId: user.id, guildId: guild.id } },
                 {
-                    $inc: { "economy.bank": userData.economy.wallet },
-                    $set: { "economy.wallet": 0 },
+                    $inc: {
+                        "economy.bank": userData.economy.wallet,
+                        "economy.wallet": -userData.economy.wallet,
+                    },
                 }
             );
             const embed = new EmbedBuilder()

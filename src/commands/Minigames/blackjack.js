@@ -7,73 +7,75 @@ const {
     ButtonStyle,
     ActionRowBuilder,
 } = require("discord.js");
-const Userdatabase = require("../../models/userSchema");
-const handleCooldowns = require("../../utils/handleCooldowns");
+const UserDatabase = require("../../models/userSchema");
 const cards = {
-    C2: "<:2C:1192958731370102835>",
-    C3: "<:3C:1192958816204095540>",
-    C4: "<:4C:1192958911452549272>",
-    C5: "<:5C:1192958970881654875>",
-    C6: "<:6C:1192959093325971527>",
-    C7: "<:7C:1192960134046040084>",
-    C8: "<:8C:1192960272806203532>",
-    C9: "<:9C:1192960369287766147>",
-    C10: "<:10C:1192960383758127235>",
-    CJ: "<:JC:1192962014830669868>",
-    CQ: "<:QC:1192962028344713356>",
-    CK: "<:KC:1192962460962009138>",
-    CA: "<:AC:1192962536044253184>",
-    H2: "<:2H:1192958783610175568>",
-    H3: "<:3H:1192958846172409926>",
-    H4: "<:4H:1192958942662369304>",
-    H5: "<:5H:1192959033431298160>",
-    H6: "<:6H:1192959121436188803>",
-    H7: "<:7H:1192960189851254916>",
-    H8: "<:8H:1192960279416406106>",
-    H9: "<:9H:1192960376145465437>",
-    H10: "<:10H:1192960538116894730>",
-    HJ: "<:JH:1192962020329398353>",
-    HQ: "<:QH:1192962035944788079>",
-    HK: "<:KH:1192962466729164800>",
-    HA: "<:AH:1192962544688701441>",
-    D2: "<:2D:1192958746981310504>",
-    D3: "<:3D:1192958831907569806>",
-    D4: "<:4D:1192958925931282523>",
-    D5: "<:5D:1192959016461152387>",
-    D6: "<:6D:1192959109125914634>",
-    D7: "<:7D:1192960146679279736>",
-    D8: "<:8D:1192960275389894716>",
-    D9: "<:9D:1192960373259763843>",
-    D10: "<:10D:1192960387524595823>",
-    DJ: "<:JD:1192962017573740775>",
-    DQ: "<:QD:1192962032056668160>",
-    DK: "<:KD:1192962464124510439>",
-    DA: "<:AD:1192962540062396466>",
-    S2: "<:2S:1192958797812076686>",
-    S3: "<:3S:1192958881022877777>",
-    S4: "<:4S:1192958955333374034>",
-    S5: "<:5S:1192959066125914202>",
-    S6: "<:6S:1192959133939400704>",
-    S7: "<:7S:1192960204275470336>",
-    S8: "<:8S:1192960283438743633>",
-    S9: "<:9S:1192960380197146695>",
-    S10: "<:10S:1192960541241643109>",
-    SJ: "<:JS:1192962023500300300>",
-    SQ: "<:QS:1192962171173355671>",
-    SK: "<:KS:1192962470076223598> ",
-    SA: "<:AS:1192962549080133653>",
+    C2: "<:2C:1233809183447453789>",
+    C3: "<:3C:1233809188812099635>",
+    C4: "<:4C:1233809194293919795>",
+    C5: "<:5C:1233809202326278287>",
+    C6: "<:6C:1233809881476235295>",
+    C7: "<:7C:1233809219266936914>",
+    C8: "<:8C:1233809883950874764>",
+    C9: "<:9C:1233809240800362556>",
+    C10: "<:10C:1233809248966934548>",
+    CJ: "<:JC:1233809898081620049>",
+    CQ: "<:QC:1233810009062772758>",
+    CK: "<:KC:1233810007058026689>",
+    CA: "<:AC:1233809257405616180>",
+    H2: "<:2H:1233809186182266880>",
+    H3: "<:3H:1233809191542718515>",
+    H4: "<:4H:1233809198521778326>",
+    H5: "<:5H:1233809880314548266>",
+    H6: "<:6H:1233809215769022545>",
+    H7: "<:7H:1233809229517688935>",
+    H8: "<:8H:1233809885473407046>",
+    H9: "<:9H:1233809244030111906>",
+    H10: "<:10H:1233809253882531880>",
+    HJ: "<:JH:1233809899478319104>",
+    HQ: "<:QH:1233810100863373374>",
+    HK: "<:KH:1233809903252930621>",
+    HA: "<:AH:1233809261239337051>",
+    D2: "<:2D:1233809184726847632>",
+    D3: "<:3D:1233809189864869939>",
+    D4: "<:4D:1233809877714079835>",
+    D5: "<:5D:1233809206084243496>",
+    D6: "<:6D:1233809213369745578>",
+    D7: "<:7D:1233809225944137789>",
+    D8: "<:8D:1233809234425286819>",
+    D9: "<:9D:1233809886811394118>",
+    D10: "<:10D:1233809252401938493>",
+    DJ: "<:JD:1233809268243959981>",
+    DQ: "<:QD:1233810099391303700>",
+    DK: "<:KD:1233809275428671608>",
+    DA: "<:AD:1233810006131085444>",
+    S2: "<:2S:1233809187293630536>",
+    S3: "<:3S:1233809193056604180>",
+    S4: "<:4S:1233809878875902065>",
+    S5: "<:5S:1233809209510854806>",
+    S6: "<:6S:1233809882713559080>",
+    S7: "<:7S:1233809231048609903>",
+    S8: "<:8S:1233809238808203325>",
+    S9: "<:9S:1233810004369473588>",
+    S10: "<:10S:1233809890078752911>",
+    SJ: "<:JS:1233809271708188875>",
+    SQ: "<:QS:1233810102755131455>",
+    SK: "<:KS:1233809278897491999>",
+    SA: "<:AS:1233809893560029184>",
+    cardBack: "<:cardBack:1233809264217165876>",
 };
 
-class BlackjackGame {
-    constructor(interaction, client) {
+class Blackjack {
+    constructor(interaction, config) {
         this.interaction = interaction;
-        this.client = client;
+        this.config = config;
         this.deck = this.generateDeck();
         this.playerHand = [];
         this.dealerHand = [];
         this.playerScore = 0;
         this.dealerScore = 0;
         this.gameOver = false;
+        this.rounds = 0;
+        this.doubleDowned = false;
     }
     generateDeck() {
         const suits = ["C", "H", "D", "S"];
@@ -95,37 +97,9 @@ class BlackjackGame {
     dealCard() {
         return this.deck.pop();
     }
-    async startGame() {
-        this.shuffleDeck();
-        this.playerHand = [this.dealCard(), this.dealCard()];
-        this.dealerHand = [this.dealCard(), this.dealCard()];
-        this.calculateScores();
-        const playerHandString = this.playerHand.map((card) => cards[card]).join(" ");
-        const dealerHandString = this.dealerHand.map((card) => cards[card]).join(" ");
-        let desc = `**Your Hand:** ${playerHandString}\n**Dealer's Hand:** ${dealerHandString}`;
-        const embed = new EmbedBuilder()
-            .setColor("Purple")
-            .setTitle("Blackjack")
-            .addFields(
-                { name: "Your Score:", value: `${this.playerScore}`, inline: true },
-                { name: "Dealer's Score:", value: `${this.dealerScore}`, inline: true }
-            );
-        const hitButton = new ButtonBuilder()
-            .setCustomId("blackjack_hit")
-            .setLabel("Hit")
-            .setStyle(ButtonStyle.Primary);
-        const standButton = new ButtonBuilder()
-            .setCustomId("blackjack_stand")
-            .setLabel("Stand")
-            .setStyle(ButtonStyle.Primary);
-        const row = new ActionRowBuilder().addComponents(hitButton, standButton);
-        embed.setDescription(desc);
-        const msg = await this.interaction.editReply({ embeds: [embed], components: [row] });
-        this.handleButtons(msg);
-    }
     calculateScores() {
         this.playerScore = this.calculateHandScore(this.playerHand);
-        this.dealerScore = this.calculateHandScore(this.dealerHand);
+        this.dealerScore = this.calculateDealerHandScore();
     }
     calculateHandScore(hand) {
         let score = 0;
@@ -141,123 +115,382 @@ class BlackjackGame {
                 score += parseInt(rank, 10);
             }
         }
-        // Adjust for Aces
         while (score > 21 && hasAce) {
             score -= 10;
             hasAce = false;
         }
         return score;
     }
-    async hit(msg) {
-        if (this.gameOver) return;
-        const card = this.dealCard();
-        this.playerHand.push(card);
+    calculateDealerHandScore() {
+        const dealerShownCard = this.dealerHand[0];
+        return this.calculateHandScore([dealerShownCard]);
+    }
+    dealInitialCards() {
+        this.playerHand.push(this.dealCard());
+        this.dealerHand.push(this.dealCard());
+        this.playerHand.push(this.dealCard());
+        this.dealerHand.push(this.dealCard());
+    }
+    showDealerHand() {
+        return `${cards[this.dealerHand[0]]} ${cards.cardBack}`;
+    }
+    showPlayerHand() {
+        return this.playerHand.map((card) => cards[card]).join(" ");
+    }
+    hitPlayer() {
+        this.playerHand.push(this.dealCard());
         this.calculateScores();
         if (this.playerScore > 21) {
-            await this.endGame(msg);
-        } else {
-            await this.sendGameEmbed(msg);
+            this.gameOver = true;
         }
     }
-    async stand(msg) {
-        if (this.gameOver) return;
+    standPlayer() {
+        this.dealerScore = this.calculateHandScore(this.dealerHand);
         while (this.dealerScore < 17) {
             this.dealerHand.push(this.dealCard());
-            this.calculateScores();
+            this.dealerScore = this.calculateHandScore(this.dealerHand);
         }
-        await this.endGame(msg);
-    }
-    async endGame(msg) {
         this.gameOver = true;
-        await this.sendGameEmbed(msg);
+    }
+    doubleDown() {
+        this.doubleDowned = true;
+        this.playerHand.push(this.dealCard());
+        this.calculateScores();
+        this.standPlayer();
+    }
+    async startGame() {
+        this.shuffleDeck();
+        this.dealInitialCards();
+        this.calculateScores();
+        if (this.playerScore === 21) {
+            this.dealerScore = this.calculateHandScore(this.dealerHand);
+            const embed = new EmbedBuilder()
+                .setColor("Purple")
+                .setAuthor({
+                    name: this.interaction.user.username,
+                    iconURL: this.interaction.user.avatarURL(),
+                })
+                .setTitle("Blackjack")
+                .addFields(
+                    {
+                        name: "Player Hand",
+                        value: `${this.showPlayerHand()}\n\nValue: ${
+                            this.playerScore === 21 ? "Blackjack" : this.playerScore
+                        }`,
+                        inline: true,
+                    },
+                    {
+                        name: "Dealer Hand",
+                        value: `${this.dealerHand.map((card) => cards[card]).join(" ")}\n\nValue: ${
+                            this.dealerScore === 21 ? "Blackjack" : this.dealerScore
+                        }`,
+                        inline: true,
+                    }
+                );
+            const hit = new ButtonBuilder()
+                .setLabel("Hit")
+                .setStyle(ButtonStyle.Primary)
+                .setCustomId("hit")
+                .setDisabled(true);
+            const stand = new ButtonBuilder()
+                .setLabel("Stand")
+                .setStyle(ButtonStyle.Success)
+                .setCustomId("stand")
+                .setDisabled(true);
+            const doubleDown = new ButtonBuilder()
+                .setLabel("Double Down")
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId("doubleDown")
+                .setDisabled(true);
+            const row = new ActionRowBuilder().addComponents(hit, stand, doubleDown);
+            let desc = "";
+            let bet = this.interaction.options.getString("bet");
+            if (this.dealerScore === 21) {
+                desc = `Result: Push`;
+                embed.setColor("Orange");
+                if (bet) {
+                    desc += `, money back`;
+                }
+            } else {
+                desc = `Result: Natural Blackjack`;
+                embed.setColor("Green");
+                if (bet) {
+                    const userData = await UserDatabase.findOne({
+                        key: {
+                            userId: this.interaction.user.id,
+                            guildId: this.interaction.guild.id,
+                        },
+                    });
+                    if (bet === "all") bet = userData.economy.wallet;
+                    else bet = parseInt(bet);
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        { $inc: { "economy.wallet": bet } }
+                    );
+                    desc += ` ${this.config.economy.currencySymbol}${bet}`;
+                }
+            }
+            embed.setDescription(desc);
+            await this.interaction.editReply({ embeds: [embed], components: [row] });
+        } else {
+            const embed = new EmbedBuilder()
+                .setColor("Purple")
+                .setAuthor({
+                    name: this.interaction.user.username,
+                    iconURL: this.interaction.user.avatarURL(),
+                })
+                .setTitle("Blackjack")
+                .addFields(
+                    {
+                        name: "Player Hand",
+                        value: `${this.showPlayerHand()}\n\nValue: ${
+                            this.playerScore === 21 ? "Blackjack" : this.playerScore
+                        }`,
+                        inline: true,
+                    },
+                    {
+                        name: "Dealer Hand",
+                        value: `${this.showDealerHand()}\n\nValue: ${
+                            this.dealerScore === 21 ? "Blackjack" : this.dealerScore
+                        }`,
+                        inline: true,
+                    }
+                );
+            const hit = new ButtonBuilder()
+                .setLabel("Hit")
+                .setStyle(ButtonStyle.Primary)
+                .setCustomId("hit");
+            const stand = new ButtonBuilder()
+                .setLabel("Stand")
+                .setStyle(ButtonStyle.Success)
+                .setCustomId("stand");
+            const doubleDown = new ButtonBuilder()
+                .setLabel("Double Down")
+                .setStyle(ButtonStyle.Secondary)
+                .setCustomId("doubleDown");
+            const row = new ActionRowBuilder().addComponents(hit, stand, doubleDown);
+            const msg = await this.interaction.editReply({ embeds: [embed], components: [row] });
+            this.handleButtons(msg);
+        }
+    }
+    disableButtons(msg) {
+        const hit = new ButtonBuilder()
+            .setLabel("Hit")
+            .setStyle(ButtonStyle.Primary)
+            .setCustomId("hit")
+            .setDisabled(true);
+        const stand = new ButtonBuilder()
+            .setLabel("Stand")
+            .setStyle(ButtonStyle.Success)
+            .setCustomId("stand")
+            .setDisabled(true);
+        const doubleDown = new ButtonBuilder()
+            .setLabel("Double Down")
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId("doubleDown")
+            .setDisabled(true);
+        const row = new ActionRowBuilder().addComponents(hit, stand, doubleDown);
+        msg.edit({ components: [row] });
+    }
+    disableDoubleDown(msg) {
+        const hit = new ButtonBuilder()
+            .setLabel("Hit")
+            .setStyle(ButtonStyle.Primary)
+            .setCustomId("hit");
+        const stand = new ButtonBuilder()
+            .setLabel("Stand")
+            .setStyle(ButtonStyle.Success)
+            .setCustomId("stand");
+        const doubleDown = new ButtonBuilder()
+            .setLabel("Double Down")
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId("doubleDown")
+            .setDisabled(true);
+        const row = new ActionRowBuilder().addComponents(hit, stand, doubleDown);
+        msg.edit({ components: [row] });
     }
     handleButtons(msg) {
-        const collector = msg.createMessageComponentCollector({ idle: 1000 * 60 * 5 });
-        collector.on("collect", async (btn) => {
-            await btn.deferUpdate().catch((e) => {});
-            if (btn.user.id !== this.interaction.user.id) {
-                btn.followUp({ content: `Not your buttons.`, ephemeral: true });
-                return;
+        const filter = (interaction) => {
+            return interaction.user.id === this.interaction.user.id;
+        };
+        const collector = msg.createMessageComponentCollector({ filter, time: 1000 * 60 * 5 });
+        collector.on("collect", async (interaction) => {
+            if (this.rounds > 0) {
+                this.disableDoubleDown(msg);
             }
-            if (btn.customId.split("_")[1] === "hit") {
-                await this.hit(msg);
-            } else if (btn.customId.split("_")[1] === "stand") {
-                await this.stand(msg);
+            this.rounds++;
+            if (interaction.customId === "hit") {
+                this.hitPlayer();
+            } else if (interaction.customId === "stand") {
+                this.standPlayer();
+            } else if (interaction.customId === "doubleDown") {
+                this.doubleDown();
+            }
+            if (this.gameOver) {
+                collector.stop();
+                this.endGame(msg);
+            } else {
+                const embed = new EmbedBuilder()
+                    .setColor("Purple")
+                    .setAuthor({
+                        name: this.interaction.user.username,
+                        iconURL: this.interaction.user.avatarURL(),
+                    })
+                    .setTitle("Blackjack")
+                    .addFields(
+                        {
+                            name: "Player Hand",
+                            value: `${this.showPlayerHand()}\n\nValue: ${
+                                this.playerScore === 21 ? "Blackjack" : this.playerScore
+                            }`,
+                            inline: true,
+                        },
+                        {
+                            name: "Dealer Hand",
+                            value: `${this.showDealerHand()}\n\nValue: ${
+                                this.dealerScore === 21 ? "Blackjack" : this.dealerScore
+                            }`,
+                            inline: true,
+                        }
+                    );
+                await interaction.update({ embeds: [embed] });
             }
         });
     }
-    async sendGameEmbed(msg) {
-        const playerHandString = this.playerHand.map((card) => cards[card]).join(" ");
-        const dealerHandString = this.dealerHand.map((card) => cards[card]).join(" ");
-        let desc = `**Your Hand:** ${playerHandString}\n**Dealer's Hand:** ${dealerHandString}`;
+    async endGame(msg) {
         const embed = new EmbedBuilder()
             .setColor("Purple")
+            .setAuthor({
+                name: this.interaction.user.username,
+                iconURL: this.interaction.user.avatarURL(),
+            })
             .setTitle("Blackjack")
             .addFields(
-                { name: "Your Score:", value: `${this.playerScore}`, inline: true },
-                { name: "Dealer's Score:", value: `${this.dealerScore}`, inline: true }
-            );
-        if (this.gameOver) {
-            desc += `\n\nGame Over! ${this.determineWinner()}`;
-            const config = await this.client.configs.get(this.interaction.guild.id);
-            if (config.economy.enabled) {
-                const bet = this.interaction.options.getInteger("bet");
-                let change = 0;
-                if (bet) {
-                    if (
-                        this.determineWinner() === "Dealer busted! You win." ||
-                        this.determineWinner() === "You win!"
-                    ) {
-                        await Userdatabase.findOneAndUpdate(
-                            {
-                                key: {
-                                    userId: this.interaction.user.id,
-                                    guildId: this.interaction.guild.id,
-                                },
-                            },
-                            { $inc: { "economy.wallet": bet * 2 } }
-                        );
-                        change = bet * 2;
-                    } else if (this.determineWinner() === "It's a tie!") {
-                    } else {
-                        data.economy.wallet -= bet;
-                        change = -bet;
-                        await data.save();
-                    }
+                {
+                    name: "Player Hand",
+                    value: `${this.showPlayerHand()}\n\nValue: ${
+                        this.playerScore === 21 ? "Blackjack" : this.playerScore
+                    }`,
+                    inline: true,
+                },
+                {
+                    name: "Dealer Hand",
+                    value: `${this.dealerHand.map((card) => cards[card]).join(" ")}\n\nValue: ${
+                        this.dealerScore === 21 ? "Blackjack" : this.dealerScore
+                    }`,
+                    inline: true,
                 }
-                embed.setFooter({
-                    text: `You gambled and got ${change} ${config.economy.currency} ${config.economy.currencySymbol}`,
+            );
+        let desc = "";
+        let bet = this.interaction.options.getString("bet");
+        if (this.playerScore > 21) {
+            desc = `Result: Bust`;
+            embed.setColor("Red");
+            if (bet) {
+                const userData = await UserDatabase.findOne({
+                    key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
                 });
+                if (bet === "all") bet = userData.economy.wallet;
+                else bet = parseInt(bet);
+                if (this.doubleDowned) bet *= 2;
+                await UserDatabase.findOneAndUpdate(
+                    {
+                        key: {
+                            userId: this.interaction.user.id,
+                            guildId: this.interaction.guild.id,
+                        },
+                    },
+                    { $inc: { "economy.wallet": -bet } }
+                );
+                desc += ` ${this.config.economy.currencySymbol}-${bet}`;
+            }
+        } else if (this.dealerScore > 21) {
+            desc = `Result: Dealer bust`;
+            embed.setColor("Green");
+            if (bet) {
+                const userData = await UserDatabase.findOne({
+                    key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
+                });
+                if (bet === "all") bet = userData.economy.wallet;
+                else bet = parseInt(bet);
+                if (this.doubleDowned) bet *= 2;
+                await UserDatabase.findOneAndUpdate(
+                    {
+                        key: {
+                            userId: this.interaction.user.id,
+                            guildId: this.interaction.guild.id,
+                        },
+                    },
+                    { $inc: { "economy.wallet": bet } }
+                );
+                desc += ` ${this.config.economy.currencySymbol}${bet}`;
+            }
+        } else if (this.playerScore > this.dealerScore) {
+            desc = `Result: Win`;
+            embed.setColor("Green");
+            if (bet) {
+                const userData = await UserDatabase.findOne({
+                    key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
+                });
+                if (bet === "all") bet = userData.economy.wallet;
+                else bet = parseInt(bet);
+                if (this.doubleDowned) bet *= 2;
+                await UserDatabase.findOneAndUpdate(
+                    {
+                        key: {
+                            userId: this.interaction.user.id,
+                            guildId: this.interaction.guild.id,
+                        },
+                    },
+                    { $inc: { "economy.wallet": bet } }
+                );
+                desc += ` ${this.config.economy.currencySymbol}${bet}`;
+            }
+        } else if (this.playerScore < this.dealerScore) {
+            desc = `Result: Loss`;
+            embed.setColor("Red");
+            if (bet) {
+                const userData = await UserDatabase.findOne({
+                    key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
+                });
+                if (bet === "all") bet = userData.economy.wallet;
+                else bet = parseInt(bet);
+                if (this.doubleDowned) bet *= 2;
+                await UserDatabase.findOneAndUpdate(
+                    {
+                        key: {
+                            userId: this.interaction.user.id,
+                            guildId: this.interaction.guild.id,
+                        },
+                    },
+                    { $inc: { "economy.wallet": -bet } }
+                );
+                desc += ` ${this.config.economy.currencySymbol}-${bet}`;
+            }
+        } else {
+            desc = `Result: Push`;
+            embed.setColor("Orange");
+            if (bet) {
+                desc += `, money back`;
             }
         }
         embed.setDescription(desc);
+        this.disableButtons(msg);
         msg.edit({ embeds: [embed] });
-    }
-    determineWinner() {
-        if (this.playerScore > 21) {
-            return "You busted! Dealer wins.";
-        } else if (this.dealerScore > 21) {
-            return "Dealer busted! You win.";
-        } else if (this.playerScore > this.dealerScore) {
-            return "You win!";
-        } else if (this.playerScore < this.dealerScore) {
-            return "Dealer wins.";
-        } else {
-            return "It's a tie!";
-        }
     }
 }
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("blackjack")
-        .setDescription("Play a game of Blackjack!")
-        .addIntegerOption((option) =>
-            option
-                .setName("bet")
-                .setDescription("Make a bet, if you win, you get double your gamble")
-                .setMinValue(100)
-                .setMaxValue(10000)
+        .setDescription("Play a game of blackjack!")
+        .addStringOption((option) =>
+            option.setName("bet").setDescription("The amount of money you want to bet")
         ),
     /**
      *
@@ -266,18 +499,37 @@ module.exports = {
      */
     async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
-        const bet = options.getInteger("bet");
-        if (bet && !config.economy.enabled)
-            return interaction.reply({ content: "Economy is disabled", ephemeral: true });
-        const data = await Userdatabase.findOne({ key: { userId: user.id, guildId: guild.id } });
-        if (data.economy.wallet < bet)
-            return interaction.reply({
-                content: `You do not have enough ${config.economy.currency} ${config.economy.currencySymbol}`,
+        const bet = options.getString("bet");
+        const userData = await UserDatabase.findOne({
+            key: { userId: user.id, guildId: guild.id },
+        });
+        if (bet && config.economy.enabled === false) {
+            return await interaction.reply({
+                content: "Economy is disabled in this server!",
                 ephemeral: true,
             });
-        await interaction.deferReply();
-        const blackjack = new BlackjackGame(interaction, client);
-        blackjack.startGame();
+        }
+        if (bet) {
+            const parsedBet = parseInt(bet, 10);
+            if (
+                bet === "all" ||
+                (parsedBet > 0 && parsedBet <= userData.economy.wallet && parsedBet <= 100000)
+            ) {
+                await interaction.deferReply();
+                const game = new Blackjack(interaction, config);
+                game.startGame();
+            } else {
+                return await interaction.reply({
+                    content:
+                        "Please enter a valid positive number, 'all', or an amount within your wallet balance!",
+                    ephemeral: true,
+                });
+            }
+        } else {
+            await interaction.deferReply();
+            const game = new Blackjack(interaction, config);
+            game.startGame();
+        }
         return;
     },
 };

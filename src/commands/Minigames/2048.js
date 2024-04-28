@@ -148,7 +148,6 @@ module.exports = {
             let multi = 0.2;
             if (result === true) multi = 5;
             const winnings = Math.floor(score * multi);
-            await data.save();
             await Userdatabase.findOneAndUpdate(
                 { key: { userId: user.id, guildId: guild.id } },
                 { $inc: { "economy.wallet": winnings } }

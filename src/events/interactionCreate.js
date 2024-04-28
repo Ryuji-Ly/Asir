@@ -281,25 +281,19 @@ module.exports = {
                 let value = interaction.commandName;
                 if (subname !== "") value = `${interaction.commandName} ${subname}`;
                 const name = `${value}`;
-                const update = await UserDatabase.findOneAndUpdate(
-                    {
-                        key: { userId: interaction.user.id, guildId: interaction.guild.id },
-                        "data.commands.name": { $ne: `${name}` },
+                const filter = {
+                    "key.userId": interaction.user.id,
+                    "key.guildId": interaction.guild.id,
+                    "data.commands.name": name,
+                };
+                const change = {
+                    $inc: {
+                        "data.commands.$.value": 1,
                     },
-                    {
-                        $inc: {
-                            "data.commands.$[x].value": 1,
-                        },
-                    },
-                    {
-                        arrayFilters: [
-                            {
-                                "x.name": `${name}`,
-                            },
-                        ],
-                        new: true,
-                    }
-                );
+                };
+                const update = await UserDatabase.findOneAndUpdate(filter, change, {
+                    new: true,
+                });
                 if (!update)
                     await UserDatabase.findOneAndUpdate(
                         {

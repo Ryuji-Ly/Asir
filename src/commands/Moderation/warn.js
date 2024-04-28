@@ -100,7 +100,7 @@ module.exports = {
                 })
                 .setColor("Orange")
                 .setDescription(
-                    `${user} has been warned for: ${reason}. Their warning count is now at ${data.warnings}`
+                    `${user} has been warned for: ${reason}. Their warning count is now at ${data.data.warnings}`
                 );
             if (config.moderation.modLogs.warn) {
                 if (config.channels.modLog !== "") {

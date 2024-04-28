@@ -98,6 +98,7 @@ module.exports = {
                 $push: { "data.infractions": newInfractionObject },
             }
         );
+        const data = await UserDatabase.findOne({ key: { userId: target.id, guildId: guild.id } });
         const successEmbed = new EmbedBuilder()
             .setAuthor({ name: "Timeout issued", iconURL: guild.iconURL() })
             .setColor("Red")

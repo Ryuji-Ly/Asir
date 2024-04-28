@@ -2220,7 +2220,7 @@ module.exports = {
                 const max = options.getInteger("max");
                 const update = await ServerConfig.findOneAndUpdate(
                     filter,
-                    { $set: { "economy.dailyRewardMin": min, "economy.dailyRewardMax": max } },
+                    { $set: { "economy.dailyMin": min, "economy.dailyMax": max } },
                     { new: true }
                 );
                 if (update) {
@@ -2301,10 +2301,30 @@ module.exports = {
             //     const maxMultiplier = options.getInteger("max-multiplier");
             //     return;
             // }
-            // if (subcommand === "toggle-custom-roles") {
-            //     const toggle = options.getBoolean("toggle");
-            //     return;
-            // }
+            if (subcommand === "toggle-custom-roles") {
+                const toggle = options.getBoolean("toggle");
+                const update = await ServerConfig.findOneAndUpdate(
+                    filter,
+                    { $set: { "economy.customRoles": toggle } },
+                    { new: true }
+                );
+                if (update) {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Custom Roles Toggled")
+                        .setDescription(`Custom roles have been toggled to ${toggle}`)
+                        .setColor("Green")
+                        .setTimestamp();
+                    await client.configs.set(guild.id, update);
+                    return interaction.editReply({ embeds: [embed] });
+                } else {
+                    const embed = new EmbedBuilder()
+                        .setTitle("Error")
+                        .setDescription(`An error occurred while toggling the custom roles`)
+                        .setColor("Red")
+                        .setTimestamp();
+                    return interaction.editReply({ embeds: [embed] });
+                }
+            }
             // if (subcommand === "configure-custom-roles") {
             //     const cost = options.getInteger("cost");
             //     const role = options.getRole("role");

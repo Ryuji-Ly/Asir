@@ -13,7 +13,7 @@ function getRandomXp(min, max) {
 async function removeRole(config, message) {
     for (let i = 0; i < config.level.ranks.length; i++) {
         const roleId = config.level.ranks[i].role;
-        const role = message.guild.roles.cache.get(roleId);
+        const role = await message.guild.roles.cache.get(roleId);
         await message.member.roles.remove(role);
     }
 }
@@ -188,9 +188,7 @@ module.exports = {
                                         content: `${message.author}`,
                                         embeds: [embed],
                                     });
-                                    if (i !== 0) {
-                                        await removeRole(config, message);
-                                    }
+                                    await removeRole(config, message);
                                     await message.member.roles.add(role);
                                     return;
                                 }

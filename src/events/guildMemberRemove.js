@@ -15,7 +15,7 @@ module.exports = {
             const guild = member.guild;
             try {
                 const channel = guild.channels.cache.find(
-                    (channel) => channel.id === config.welcomeChannelId
+                    (channel) => channel.id === config.channels.welcome
                 );
                 if (!channel)
                     return console.log(

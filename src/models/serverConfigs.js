@@ -85,7 +85,7 @@ const serverConfigSchema = new mongoose.Schema({
             multiplierIncrement: 0.2,
             multiplierCostScaling: "multiply",
             multiplierMax: 5,
-            customRoles: true,
+            customRoles: false,
             customRoleCost: 20000,
             customRolePosition: "",
             customRoleLimit: 5,
