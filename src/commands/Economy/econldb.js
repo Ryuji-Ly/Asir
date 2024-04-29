@@ -5,6 +5,7 @@ const {
     PermissionFlagsBits,
 } = require("discord.js");
 const UserDatabase = require("../../models/userSchema");
+const Big = require("big.js");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -39,6 +40,8 @@ module.exports = {
             let { user } = await interaction.guild.members.fetch(top[i].key.userId);
             if (!user) return;
             let userWallet = top[i].economy.wallet;
+            const number = new Big(userWallet);
+            userWallet = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             desc += `**${i + 1}.** ${user}: **Wallet** **${userWallet}**\n`;
         }
         embed.setDescription(desc);

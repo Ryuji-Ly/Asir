@@ -2,13 +2,21 @@ var colors = require("colors");
 colors.enable();
 const UserDatabase = require("../models/userSchema");
 const parseMilliseconds = require("parse-ms-2");
-const { EmbedBuilder } = require("discord.js");
+const { EmbedBuilder, GuildMember, Client } = require("discord.js");
 
 module.exports = {
     name: "guildMemberRemove",
+    /**
+     *
+     * @param {GuildMember} member
+     * @param {Client} client
+     * @returns
+     */
     async execute(member, client) {
         if (member.bot) return;
-        await UserDatabase.deleteMany({ key: { userId: member.id, guildId: member.guild.id } });
+        await UserDatabase.deleteMany({
+            key: { userId: member.user.id, guildId: member.guild.id },
+        });
         const config = await client.configs.get(member.guild.id);
         if (!config) return;
         if (config.channels.welcome !== "") {

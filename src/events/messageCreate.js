@@ -65,6 +65,52 @@ module.exports = {
                     .red
             );
         }
+        if (message.mentions.users.size > 0) {
+            await message.mentions.users.forEach(async (user) => {
+                const mentionedUser = await Userdatabase.findOne({
+                    key: { userId: user.id, guildId: message.guild.id },
+                });
+                if (mentionedUser) {
+                    if (mentionedUser.data.mentioned.find((x) => x.user)) {
+                        await Userdatabase.findOneAndUpdate(
+                            {
+                                key: { userId: user.id, guildId: message.guild.id },
+                            },
+                            { $inc: { "data.mentioned.$[x].count": 1 } },
+                            { arrayFilters: [{ "x.user": message.author.id }] }
+                        );
+                    } else {
+                        const mentioned = { user: message.author.id, count: 1 };
+                        await Userdatabase.findOneAndUpdate(
+                            {
+                                key: { userId: user.id, guildId: message.guild.id },
+                            },
+                            { $push: { "data.mentioned": mentioned } }
+                        );
+                    }
+                }
+                const data = await Userdatabase.findOne({
+                    key: { userId: message.author.id, guildId: message.guild.id },
+                });
+                if (data.data.mentions.find((x) => x.user === user.id)) {
+                    await Userdatabase.findOneAndUpdate(
+                        {
+                            key: { userId: message.author.id, guildId: message.guild.id },
+                        },
+                        { $inc: { "data.mentions.$[x].count": 1 } },
+                        { arrayFilters: [{ "x.user": user.id }] }
+                    );
+                } else {
+                    const mentioned = { user: user.id, count: 1 };
+                    await Userdatabase.findOneAndUpdate(
+                        {
+                            key: { userId: message.author.id, guildId: message.guild.id },
+                        },
+                        { $push: { "data.mentions": mentioned } }
+                    );
+                }
+            });
+        }
         //if no user, create new user
         if (!user) {
             const newUser = new Userdatabase({
@@ -150,10 +196,12 @@ module.exports = {
                             channel = message.guild.channels.cache.find(
                                 (c) => c.id === config.channels.level
                             );
-                        if (!channel)
-                            return console.log(
+                        if (!channel) {
+                            console.log(
                                 `[GUILD] Could not find level channel for ${message.guild.name}`
                             );
+                            channel = message.channel;
+                        }
                         // create level up embed
                         const levelMessage = config.level.levelMessage
                             .replace("{user}", message.member)

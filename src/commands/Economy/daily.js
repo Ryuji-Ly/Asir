@@ -7,6 +7,7 @@ const {
 const UserDatabase = require("../../models/userSchema");
 const GroupModel = require("../../models/group");
 const parseMilliseconds = require("parse-ms-2");
+const Big = require("big.js");
 const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
@@ -39,6 +40,8 @@ module.exports = {
             { key: { userId: user.id, guildId: guild.id } },
             { $inc: { "economy.wallet": final } }
         );
+        const number = new Big(final);
+        const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: user.username,
@@ -46,7 +49,7 @@ module.exports = {
             })
             .setColor(interaction.member.displayHexColor)
             .setDescription(
-                `You have claimed ${final} ${config.economy.currency} ${config.economy.currencySymbol}!`
+                `You have claimed ${formatted} ${config.economy.currency} ${config.economy.currencySymbol}!`
             );
         await interaction.reply({ embeds: [embed] });
         return;

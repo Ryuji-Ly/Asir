@@ -7,8 +7,7 @@ const {
     ButtonBuilder,
 } = require("discord.js");
 const UserDatabase = require("../../models/userSchema");
-const handleCooldowns = require("../../utils/handleCooldowns");
-
+const Big = require("big.js");
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("gamble")
@@ -44,7 +43,10 @@ module.exports = {
         const { options, user, guild } = interaction;
         const gambleCommand = options.getSubcommand();
         const data = await UserDatabase.findOne({ key: { userId: user.id, guildId: guild.id } });
-        const gambleEmbed = new EmbedBuilder().setColor(0x00aa6d);
+        const gambleEmbed = new EmbedBuilder()
+            .setColor(0x00aa6d)
+            .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() });
+
         if (config.economy.enabled === false)
             return interaction.reply({ content: "Economy is disabled", ephemeral: true });
         if (gambleCommand === "three-doors") {
@@ -102,7 +104,7 @@ module.exports = {
             const getAmount = (label, gamble) => {
                 let amount = -gamble;
                 if (label === double) {
-                    amount = gamble * 1.4;
+                    amount = Math.round(gamble * 1.4);
                 } else if (label === half) {
                     amount = -Math.round(gamble / 2);
                 }
@@ -137,17 +139,50 @@ module.exports = {
 
                 const label = choice.data.label;
                 const amtChange = getAmount(label, amount);
-                data.economy.wallet += amtChange;
+                data.economy.wallet += Math.floor(amtChange);
                 await data.save();
-                await UserDatabase.findOneAndUpdate(
-                    { key: { userId: user.id, guildId: guild.id } },
-                    { $inc: { "economy.wallet": amtChange } }
-                );
+                if (data.data.gambleStats.length === 0) {
+                    const gambleStats = { wins: 0, losses: 0, currencyGain: 0, currencyLoss: 0 };
+                    if (label === double) {
+                        gambleStats.currencyGain = amtChange;
+                        gambleStats.wins++;
+                    } else {
+                        gambleStats.currencyLoss = amtChange;
+                        gambleStats.losses++;
+                    }
+                    await UserDatabase.findOneAndUpdate(
+                        { key: { userId: user.id, guildId: guild.id } },
+                        {
+                            $push: { "data.gambleStats": gambleStats },
+                            $inc: { "economy.wallet": amtChange },
+                        }
+                    );
+                } else {
+                    const data = await UserDatabase.findOne({
+                        key: { userId: user.id, guildId: guild.id },
+                    });
+                    const stats = data.data.gambleStats[0];
+                    stats.wins += label === double ? 1 : 0;
+                    stats.losses += label === double ? 0 : 1;
+                    stats.currencyGain += label === double ? amtChange : 0;
+                    stats.currencyLoss += label === double ? 0 : amtChange;
+                    await UserDatabase.findOneAndUpdate(
+                        { key: { userId: user.id, guildId: guild.id } },
+                        {
+                            $inc: {
+                                "economy.wallet": Math.floor(amtChange),
+                            },
+                            $set: { "data.gambleStats.0": stats },
+                        }
+                    );
+                }
                 if (label === double) {
                     gambleEmbed
                         .setTitle("You just 2.4x'd your bet")
                         .setDescription(
-                            `${user.username} gained ${amtChange} ${config.economy.currency} ${config.economy.currencySymbol}`
+                            `${user.username} gained ${Math.floor(amtChange)} ${
+                                config.economy.currency
+                            } ${config.economy.currencySymbol}`
                         );
                 } else if (label === half) {
                     gambleEmbed
@@ -196,6 +231,7 @@ module.exports = {
             const row = new ActionRowBuilder().addComponents(ButtonSpin);
 
             gambleEmbed
+                .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
                 .setTitle(
                     `Playing slots for ${amount} ${config.economy.currency} ${config.economy.currencySymbol}`
                 )
@@ -297,10 +333,38 @@ module.exports = {
                     }
                     data.economy.wallet += winnings;
                     await data.save();
-                    await UserDatabase.findOneAndUpdate(
-                        { key: { userId: user.id, guildId: guild.id } },
-                        { $inc: { "economy.wallet": winnings } }
-                    );
+                    const userData = await UserDatabase.findOne({
+                        key: { userId: user.id, guildId: guild.id },
+                    });
+                    if (userData.data.gambleStats.length === 0) {
+                        await UserDatabase.findOneAndUpdate(
+                            { key: { userId: user.id, guildId: guild.id } },
+                            {
+                                $push: {
+                                    "data.gambleStats": {
+                                        wins: win ? 1 : 0,
+                                        losses: win ? 0 : 1,
+                                        currencyGain: win ? winnings : 0,
+                                        currencyLoss: win ? 0 : winnings,
+                                    },
+                                },
+                                $inc: { "economy.wallet": winnings },
+                            }
+                        );
+                    } else {
+                        const gambleStats = userData.data.gambleStats[0];
+                        gambleStats.wins += win ? 1 : 0;
+                        gambleStats.losses += win ? 0 : 1;
+                        gambleStats.currencyGain += win ? winnings : 0;
+                        gambleStats.currencyLoss += win ? 0 : winnings;
+                        await UserDatabase.findOneAndUpdate(
+                            { key: { userId: user.id, guildId: guild.id } },
+                            {
+                                $set: { "data.gambleStats.0": gambleStats },
+                                $inc: { "economy.wallet": winnings },
+                            }
+                        );
+                    }
                     const resultMessage = win
                         ? `You won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} with ${symbol} combination!`
                         : "Sorry, you didn't win this time.";

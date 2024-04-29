@@ -179,24 +179,81 @@ module.exports = {
                     else if (mines < 5) winnings *= 0.01;
                     else if (mines === 5) winnings *= 1;
                     else if (mines < 10) winnings *= 5;
-                    else winnings *= 10;
+                    else if (mines < 20) winnings *= 10;
+                    else winnings *= 20;
                     data.economy.wallet += winnings;
+                    if (data.data.minigameStats.find((x) => x.name === "minesweeper")) {
+                        const stats = data.data.minigameStats.find((x) => x.name === "minesweeper");
+                        stats.wins++;
+                        stats.currencyGain += winnings;
+                        await UserDatabase.findOneAndUpdate(
+                            { key: { userId: user.id, guildId: guild.id } },
+                            {
+                                $inc: { "economy.wallet": winnings },
+                                $set: { "data.minigameStats.[x]": stats },
+                            },
+                            {
+                                arrayFilters: [{ "x.name": "minesweeper" }],
+                            }
+                        );
+                    } else {
+                        const stats = {
+                            name: "minesweeper",
+                            wins: 1,
+                            losses: 0,
+                            currencyGain: winnings,
+                            currencyLoss: 0,
+                        };
+                        data.data.minigameStats.push(stats);
+                        await UserDatabase.findOneAndUpdate(
+                            { key: { userId: user.id, guildId: guild.id } },
+                            {
+                                $inc: { "economy.wallet": winnings },
+                                $push: { "data.minigameStats": stats },
+                            }
+                        );
+                    }
                     await data.save();
-                    await UserDatabase.findOneAndUpdate(
-                        { key: { userId: user.id, guildId: guild.id } },
-                        { $inc: { "economy.wallet": winnings } }
-                    );
                     let text = `You have won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol}.`;
                     if (bet) text += " (Basic reward + bet).";
                     embed.setFooter({ text: text });
                 } else {
                     if (bet) {
                         data.economy.wallet -= bet;
+                        if (data.data.minigameStats.find((x) => x.name === "minesweeper")) {
+                            const stats = data.data.minigameStats.find(
+                                (x) => x.name === "minesweeper"
+                            );
+                            stats.losses++;
+                            stats.currencyLoss += bet;
+                            await UserDatabase.findOneAndUpdate(
+                                { key: { userId: user.id, guildId: guild.id } },
+                                {
+                                    $inc: { "economy.wallet": -bet },
+                                    $set: { "data.minigameStats.$[x].name": stats },
+                                },
+                                {
+                                    arrayFilters: [{ "x.name": "minesweeper" }],
+                                }
+                            );
+                        } else {
+                            const stats = {
+                                name: "minesweeper",
+                                wins: 0,
+                                losses: 1,
+                                currencyGain: 0,
+                                currencyLoss: bet,
+                            };
+                            data.data.minigameStats.push(stats);
+                            await UserDatabase.findOneAndUpdate(
+                                { key: { userId: user.id, guildId: guild.id } },
+                                {
+                                    $inc: { "economy.wallet": -bet },
+                                    $push: { "data.minigameStats": stats },
+                                }
+                            );
+                        }
                         await data.save();
-                        await UserDatabase.findOneAndUpdate(
-                            { key: { userId: user.id, guildId: guild.id } },
-                            { $inc: { "economy.wallet": -bet } }
-                        );
                         embed.setFooter({ text: `You have lost the bet` });
                     }
                 }

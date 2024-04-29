@@ -119,6 +119,10 @@ module.exports = {
         const initializeGame = async () => {
             maxTurns = Math.floor((25 * (length * 2)) / 26);
             const embed = new EmbedBuilder()
+                .setAuthor({
+                    name: user.tag,
+                    iconURL: user.displayAvatarURL({ dynamic: true }),
+                })
                 .setColor("Blurple")
                 .setTitle("Flood")
                 .setDescription(getBoardContent())

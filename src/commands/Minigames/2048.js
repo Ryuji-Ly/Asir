@@ -146,18 +146,51 @@ module.exports = {
         };
         const gameOver = async (msg, result) => {
             let multi = 0.2;
-            if (result === true) multi = 5;
+            if (result === true) multi = 10;
             const winnings = Math.floor(score * multi);
             await Userdatabase.findOneAndUpdate(
                 { key: { userId: user.id, guildId: guild.id } },
                 { $inc: { "economy.wallet": winnings } }
             );
+            const data = await Userdatabase.findOne({
+                key: { userId: user.id, guildId: guild.id },
+            });
+            if (data.data.minigameStats.find((m) => m.name === "2048") === undefined) {
+                const minigameStats = { name: "2048", wins: 0, losses: 0, currencyGain: 0 };
+                minigameStats.currencyGain += winnings;
+                if (result === true) {
+                    minigameStats.wins += 1;
+                } else {
+                    minigameStats.losses += 1;
+                }
+                await Userdatabase.findOneAndUpdate(
+                    { key: { userId: user.id, guildId: guild.id } },
+                    { $push: { "data.minigameStats": minigameStats } }
+                );
+            } else {
+                const minigameStats = data.data.minigameStats.find((m) => m.name === "2048");
+                minigameStats.currencyGain += winnings;
+                if (result === true) {
+                    minigameStats.wins += 1;
+                } else {
+                    minigameStats.losses += 1;
+                }
+                await Userdatabase.findOneAndUpdate(
+                    { key: { userId: user.id, guildId: guild.id } },
+                    { $set: { "data.minigameStats.$[x]": data.data.minigameStats } },
+                    { arrayFilters: [{ "x.name": "2048" }] }
+                );
+            }
             let string = "";
             if (result === true)
                 string = `Congratulations! You have won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} !`;
             else
                 string = `You have lost... You still win ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} though.`;
             const embed = new EmbedBuilder()
+                .setAuthor({
+                    name: user.username,
+                    iconURL: user.displayAvatarURL({ dynamic: true }),
+                })
                 .setTitle("2048")
                 .setColor("Purple")
                 .setImage("attachment://2048.png")

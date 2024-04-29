@@ -199,6 +199,7 @@ module.exports = {
         const correctAnswerIndex =
             shuffledAnswers.findIndex((answer) => answer === correctAnswer) + 1;
         const embed = new EmbedBuilder()
+            .setAuthor({ name: user.tag, iconURL: user.displayAvatarURL() })
             .setTitle(`Category: ${category}`)
             .setDescription(question)
             .setFooter({

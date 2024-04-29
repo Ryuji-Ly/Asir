@@ -5,6 +5,7 @@ const {
     PermissionFlagsBits,
 } = require("discord.js");
 const UserDatabase = require("../../models/userSchema");
+const Big = require("big.js");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -45,6 +46,8 @@ module.exports = {
                     $inc: { "economy.wallet": -amount, "economy.bank": amount },
                 }
             );
+            const number = new Big(amount);
+            const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             const embed = new EmbedBuilder()
                 .setAuthor({
                     name: `${interaction.user.username}`,
@@ -52,7 +55,7 @@ module.exports = {
                 })
                 .setColor("Green")
                 .setDescription(
-                    `Successfully deposited ${amount} ${config.economy.currency} ${config.economy.currencySymbol} into your bank`
+                    `Successfully deposited ${formatted} ${config.economy.currency} ${config.economy.currencySymbol} into your bank`
                 )
                 .setTimestamp();
             interaction.reply({ embeds: [embed] });
@@ -69,6 +72,8 @@ module.exports = {
                     },
                 }
             );
+            const number = new Big(userData.economy.wallet);
+            const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             const embed = new EmbedBuilder()
                 .setAuthor({
                     name: `${interaction.user.username}`,
@@ -76,7 +81,7 @@ module.exports = {
                 })
                 .setColor("Green")
                 .setDescription(
-                    `Successfully deposited ${userData.economy.wallet} ${config.economy.currency} ${config.economy.currencySymbol} into your bank`
+                    `Successfully deposited ${formatted} ${config.economy.currency} ${config.economy.currencySymbol} into your bank`
                 )
                 .setTimestamp();
             interaction.reply({ embeds: [embed] });
