@@ -49,12 +49,14 @@ const handleCooldowns = async (interaction, cooldown) => {
             })
             .catch(
                 async (e) =>
-                    await interaction.editReply({
-                        content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
-                            (Date.now() + timeLeft) / 1000
-                        )}:R>`,
-                        ephemeral: true,
-                    })
+                    await interaction
+                        .editReply({
+                            content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
+                                (Date.now() + timeLeft) / 1000
+                            )}:R>`,
+                            ephemeral: true,
+                        })
+                        .catch((e) => {})
             );
         return false;
     } else {

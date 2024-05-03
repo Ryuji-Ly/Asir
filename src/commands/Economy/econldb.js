@@ -24,7 +24,9 @@ module.exports = {
                 ephemeral: true,
             });
         const users = await UserDatabase.find({ "key.guildId": guild.id });
-        const sorted = users.sort((a, b) => b.economy.wallet - a.economy.wallet);
+        const sorted = users.sort(
+            (a, b) => b.economy.wallet + b.economy.bank - (a.economy.wallet + a.economy.bank)
+        );
         const currentRank = sorted.findIndex((data) => data.key.userId === user.id) + 1;
         const top = sorted.slice(0, 10);
         const embed = new EmbedBuilder()
@@ -40,9 +42,10 @@ module.exports = {
             let { user } = await interaction.guild.members.fetch(top[i].key.userId);
             if (!user) return;
             let userWallet = top[i].economy.wallet;
-            const number = new Big(userWallet);
-            userWallet = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            desc += `**${i + 1}.** ${user}: **Wallet** **${userWallet}**\n`;
+            let userBank = top[i].economy.bank;
+            let total = new Big(userWallet).plus(new Big(userBank));
+            total = total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            desc += `**${i + 1}.** ${user}: \`Total ${total}\`\n`;
         }
         embed.setDescription(desc);
         await interaction.reply({ embeds: [embed] });

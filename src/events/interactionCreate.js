@@ -7,6 +7,7 @@ const {
     ButtonStyle,
     ChannelType,
     ActionRowBuilder,
+    DiscordAPIError,
 } = require("discord.js");
 const UserDatabase = require("../models/userSchema");
 var colors = require("colors");
@@ -349,6 +350,7 @@ module.exports = {
             try {
                 await command.execute(interaction, client, config);
             } catch (error) {
+                if (error.code === 10062 && error instanceof DiscordAPIError) return;
                 const embed = new EmbedBuilder()
                     .setColor("Red")
                     .setAuthor({ name: `[INTERACTION CREATE]` })
@@ -377,6 +379,7 @@ module.exports = {
                     .catch((e) => {});
             }
         } catch (error) {
+            if (error.code === 10062 && error instanceof DiscordAPIError) return;
             const embed = new EmbedBuilder()
                 .setColor("Red")
                 .setAuthor({ name: `[INTERACTION CREATE]` })

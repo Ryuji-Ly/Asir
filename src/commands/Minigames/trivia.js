@@ -140,6 +140,54 @@ const questions = [
         correctAnswer: "Mind Magic",
         incorrectAnswers: ["Combat Magic", "Divination", "Shaping skills"],
     },
+    {
+        category: "Technology",
+        question: "Who is the largest tech company by market share?",
+        correctAnswer: "Microsoft",
+        incorrectAnswers: ["Apple", "Nvidia", "Google"],
+    },
+    {
+        category: "History",
+        question: "When did world war 2 end?",
+        correctAnswer: "1945",
+        incorrectAnswers: ["1939", "1944", "1918"],
+    },
+    {
+        category: "Manga",
+        question: "Who is the creator of the popular manga 'Naruto'?",
+        correctAnswer: "Masashi Kishimoto",
+        incorrectAnswers: ["Akira Toriyama", "Eiichiro Oda", "Hirohiko Araki"],
+    },
+    {
+        category: "Anima",
+        question: "Which anime series revolves around a boy who sells his soul to a demon?",
+        correctAnswer: "Black Butler",
+        incorrectAnswers: ["Demon Slayer", "Black Clover", "Bleach"],
+    },
+    {
+        category: "Music",
+        question: "Who's album sold the most?",
+        correctAnswer: "Michael Jackson",
+        incorrectAnswers: ["Pink Floyd", "AC/DC", "Backstreet Boys"],
+    },
+    {
+        category: "Geography",
+        question: "How many contenets are there?",
+        correctAnswer: "7",
+        incorrectAnswers: ["5", "4", "6"],
+    },
+    {
+        category: "Sports",
+        question: "Which team won the most world cups?",
+        correctAnswer: "Brazil",
+        incorrectAnswers: ["Germany", "France", "Argentina"],
+    },
+    {
+        category: "Novels",
+        question: 'Who is the author of "The beginning of the end"',
+        correctAnswer: "TurtleMe",
+        incorrectAnswers: ["Guilty3", "Adui", "Zogarth"],
+    },
 ];
 
 module.exports = {

@@ -40,7 +40,13 @@ const profileSchema = new mongoose.Schema({
             blacklistedCommands: [],
             customRoleCount: 0,
             shopStats: [],
-            timeBasedStats: [],
+            timeBasedStats: {
+                dailyMessages: 0,
+                weeklyMessages: 0,
+                monthlyMessages: 0,
+                yearlyMessages: 0,
+                totalMessages: [],
+            },
         },
     },
     multiplier: {

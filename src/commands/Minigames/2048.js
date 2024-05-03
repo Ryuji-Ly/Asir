@@ -9,6 +9,7 @@ const {
     ActionRowBuilder,
 } = require("discord.js");
 const Userdatabase = require("../../models/userSchema");
+const Big = require("big.js");
 
 module.exports = {
     data: new SlashCommandBuilder().setName("2048").setDescription("Play a game of 2048"),
@@ -182,10 +183,12 @@ module.exports = {
                 );
             }
             let string = "";
+            const number = new Big(winnings);
+            const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             if (result === true)
-                string = `Congratulations! You have won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} !`;
+                string = `Congratulations! You have won ${formatted} ${config.economy.currency} ${config.economy.currencySymbol} !`;
             else
-                string = `You have lost... You still win ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} though.`;
+                string = `You have lost... You still win ${formatted} ${config.economy.currency} ${config.economy.currencySymbol} though.`;
             const embed = new EmbedBuilder()
                 .setAuthor({
                     name: user.username,

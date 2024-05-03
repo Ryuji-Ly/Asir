@@ -10,6 +10,7 @@ const UserDatabase = require("../../models/userSchema");
 const GroupModel = require("../../models/group");
 const handleCooldowns = require("../../utils/handleCooldowns");
 const parseMilliseconds = require("parse-ms-2");
+const Big = require("big.js");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -178,9 +179,8 @@ module.exports = {
                     if (mines === 1) winnings = 0;
                     else if (mines < 5) winnings *= 0.01;
                     else if (mines === 5) winnings *= 1;
-                    else if (mines < 10) winnings *= 5;
-                    else if (mines < 20) winnings *= 10;
-                    else winnings *= 20;
+                    else winnings *= mines * 0.2;
+                    winnings = Math.round(winnings);
                     data.economy.wallet += winnings;
                     if (data.data.minigameStats.find((x) => x.name === "minesweeper")) {
                         const stats = data.data.minigameStats.find((x) => x.name === "minesweeper");
@@ -190,7 +190,7 @@ module.exports = {
                             { key: { userId: user.id, guildId: guild.id } },
                             {
                                 $inc: { "economy.wallet": winnings },
-                                $set: { "data.minigameStats.[x]": stats },
+                                $set: { "data.minigameStats.$[x]": stats },
                             },
                             {
                                 arrayFilters: [{ "x.name": "minesweeper" }],
@@ -214,6 +214,7 @@ module.exports = {
                         );
                     }
                     await data.save();
+                    winnings = new Big(winnings).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                     let text = `You have won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol}.`;
                     if (bet) text += " (Basic reward + bet).";
                     embed.setFooter({ text: text });
@@ -230,7 +231,7 @@ module.exports = {
                                 { key: { userId: user.id, guildId: guild.id } },
                                 {
                                     $inc: { "economy.wallet": -bet },
-                                    $set: { "data.minigameStats.$[x].name": stats },
+                                    $set: { "data.minigameStats.$[x]": stats },
                                 },
                                 {
                                     arrayFilters: [{ "x.name": "minesweeper" }],

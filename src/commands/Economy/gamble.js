@@ -52,9 +52,11 @@ module.exports = {
         if (gambleCommand === "three-doors") {
             const amount = options.getInteger("amount");
             if (data.economy.wallet < amount) {
+                const number = new Big(amount);
+                const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 await interaction.deferReply({ ephemeral: true });
                 return await interaction.editReply(
-                    `You don't have ${amount} ${config.economy.currency} ${config.economy.currencySymbol} to gamble with`
+                    `You don't have ${formatted} ${config.economy.currency} ${config.economy.currencySymbol} to gamble with`
                 );
             }
 
@@ -76,10 +78,11 @@ module.exports = {
                 .setStyle(ButtonStyle.Primary);
 
             const row = new ActionRowBuilder().addComponents(Button1, Button2, Button3);
-
+            const number = new Big(amount);
+            const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             gambleEmbed
                 .setTitle(
-                    `Playing three doors for ${amount} ${config.economy.currency} ${config.economy.currencySymbol}`
+                    `Playing three doors for ${formatted} ${config.economy.currency} ${config.economy.currencySymbol}`
                 )
                 .setFooter({
                     text: "Each door has 2.4x, 0.5x, or 0x the bet amount ",
@@ -176,29 +179,25 @@ module.exports = {
                         }
                     );
                 }
+                const number = new Big(Math.floor(amtChange));
+                const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 if (label === double) {
                     gambleEmbed
                         .setTitle("You just 2.4x'd your bet")
                         .setDescription(
-                            `${user.username} gained ${Math.floor(amtChange)} ${
-                                config.economy.currency
-                            } ${config.economy.currencySymbol}`
+                            `${user.username} gained ${formatted} ${config.economy.currency} ${config.economy.currencySymbol}`
                         );
                 } else if (label === half) {
                     gambleEmbed
                         .setTitle("You just lost half your bet")
                         .setDescription(
-                            `${user.username} lost ${-amtChange} ${config.economy.currency} ${
-                                config.economy.currencySymbol
-                            }`
+                            `${user.username} lost ${formatted} ${config.economy.currency} ${config.economy.currencySymbol}`
                         );
                 } else if (label === lose) {
                     gambleEmbed
                         .setTitle("You just lost your entire bet")
                         .setDescription(
-                            `${user.username} lost ${-amtChange} ${config.economy.currency} ${
-                                config.economy.currencySymbol
-                            }`
+                            `${user.username} lost ${formatted} ${config.economy.currency} ${config.economy.currencySymbol}`
                         );
                 }
                 gambleEmbed.setFooter({
@@ -213,9 +212,11 @@ module.exports = {
         if (gambleCommand === "slots") {
             const amount = options.getInteger("amount");
             if (data.economy.wallet < amount) {
+                const number = new Big(amount);
+                const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 await interaction.deferReply({ ephemeral: true });
                 return await interaction.editReply(
-                    `You don't have ${amount} ${config.economy.currency} ${config.economy.currencySymbol} to gamble with`
+                    `You don't have ${formatted} ${config.economy.currency} ${config.economy.currencySymbol} to gamble with`
                 );
             }
 
@@ -229,11 +230,12 @@ module.exports = {
                 .setStyle(ButtonStyle.Primary);
 
             const row = new ActionRowBuilder().addComponents(ButtonSpin);
-
+            const number = new Big(amount);
+            const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             gambleEmbed
                 .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
                 .setTitle(
-                    `Playing slots for ${amount} ${config.economy.currency} ${config.economy.currencySymbol}`
+                    `Playing slots for ${formatted} ${config.economy.currency} ${config.economy.currencySymbol}`
                 )
                 .setFooter({
                     text: "Spin the slots and see if you win!",
@@ -251,7 +253,7 @@ module.exports = {
 
             const collector = message.createMessageComponentCollector({
                 filter,
-                time: 60000,
+                time: 1000 * 60 * 10,
             });
 
             collector.on("collect", async (i) => {
@@ -267,8 +269,6 @@ module.exports = {
                             for (let j = 0; j < 3; j++) {
                                 const randomValue = Math.random();
                                 let randomSymbol;
-
-                                // adjust the probabilities here
                                 if (randomValue < 0.479142) {
                                     randomSymbol = "🍒"; // Probability of 0.479142 for 🍒
                                 } else if (randomValue < 0.479142 + 0.271442) {
@@ -365,10 +365,13 @@ module.exports = {
                             }
                         );
                     }
+                    winnings = new Big(winnings);
+                    winnings = winnings.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                     const resultMessage = win
                         ? `You won ${winnings} ${config.economy.currency} ${config.economy.currencySymbol} with ${symbol} combination!`
                         : "Sorry, you didn't win this time.";
-
+                    const number = new Big(data.economy.wallet);
+                    const formatted = number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                     gambleEmbed
                         .setTitle("Slots Result")
                         .setDescription(
@@ -377,7 +380,7 @@ module.exports = {
                                 .join("\n")}\n\n${resultMessage}`
                         )
                         .setFooter({
-                            text: `${user.username}'s new wallet: ${data.economy.wallet} ${config.economy.currency} ${config.economy.currencySymbol}`,
+                            text: `${user.username}'s new wallet: ${formatted} ${config.economy.currency} ${config.economy.currencySymbol}`,
                         });
 
                     await i.update({ embeds: [gambleEmbed], components: [row] });

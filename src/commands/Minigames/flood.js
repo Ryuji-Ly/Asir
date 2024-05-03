@@ -18,7 +18,7 @@ module.exports = {
                 .setName("length")
                 .setDescription("Set the board length")
                 .setMinValue(5)
-                .setMaxValue(20)
+                .setMaxValue(14)
         )
         .setDMPermission(false),
     /**
@@ -61,10 +61,19 @@ module.exports = {
             }
             return components;
         };
-        const gameOver = (msg, result) => {
-            const resultMessage = result
+        const gameOver = async (msg, result) => {
+            let resultMessage = result
                 ? `You have won! You took **${turns}** turns.`
                 : "You have lost your dignity, loosing a game of flood.";
+            if (config.economy.enabled) {
+                if (result) {
+                    await UserDatabase.findOneAndUpdate(
+                        { userId: user.id },
+                        { $inc: { balance: config.economy.minigameReward } }
+                    );
+                    resultMessage += ` You have been awarded **${config.economy.minigameReward}** ${config.economy.currency} ${config.economy.currencySymbol}.`;
+                }
+            }
             const embed = new EmbedBuilder()
                 .setColor("Blurple")
                 .setTitle("Flood")

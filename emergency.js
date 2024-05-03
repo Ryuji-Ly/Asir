@@ -1,4 +1,4 @@
-const UserDatabase = require("./src/models/userSchema");
+const UserModel = require("./src/models/userSchema");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
@@ -16,57 +16,36 @@ require("dotenv").config();
         });
 })();
 
-const fix = async () => {
-    const UserData = await UserDatabase.findOne({
-        key: { userId: "348902272534839296", guildId: "1161001645698715698" },
-    });
-    console.log(UserData);
-    const distinctUserGuildIds = await UserDatabase.find();
-    const uniqueCombinations = new Set();
-    distinctUserGuildIds.forEach((key) => {
-        const { userId, guildId } = key.key;
-        uniqueCombinations.add(`${userId}-${guildId}`);
-    });
-    for (const combination of uniqueCombinations) {
-        const [userId, guildId] = combination.split("-");
-        // Find the user document by userId and guildId
-        const userDocument = await UserDatabase.findOne({
-            "key.userId": userId,
-            "key.guildId": guildId,
-        });
+async function updateUsersWithDefaultTimeBasedStats() {
+    try {
+        // Find users where data.timeBasedStats is an empty array
+        const usersToUpdate = await UserModel.find();
 
-        if (userDocument) {
-            // Aggregate and sum values for each unique command
-            const commandSummaries = userDocument.data.commands.reduce((summaryMap, command) => {
-                const { name, value } = command;
-                if (!summaryMap[name]) {
-                    summaryMap[name] = 0;
-                }
-                summaryMap[name] += value;
-                return summaryMap;
-            }, {});
-            // Prepare updated commands array
-            const updatedCommands = Object.keys(commandSummaries).map((name) => ({
-                name,
-                value: commandSummaries[name],
-            }));
-
-            // Update the user document with consolidated command data
-            await UserDatabase.findOneAndUpdate(
-                { "key.userId": userId, "key.guildId": guildId },
-                {
-                    $set: {
-                        "data.commands": updatedCommands,
-                    },
-                },
-                { new: true }
-            );
-
-            console.log(
-                `Commands consolidated and duplicates removed for user ${userId} in guild ${guildId}`
-            );
+        if (usersToUpdate.length === 0) {
+            console.log("No users found with empty timeBasedStats.");
+            return;
         }
-    }
-};
 
-// fix();
+        // Update each user to set data.timeBasedStats to the new default structure
+        await Promise.all(
+            usersToUpdate.map(async (user) => {
+                await UserModel.findByIdAndUpdate(user._id, {
+                    "data.timeBasedStats": {
+                        dailyMessages: 0,
+                        weeklyMessages: 0,
+                        monthlyMessages: 0,
+                        yearlyMessages: 0,
+                        totalMessages: [],
+                    },
+                });
+            })
+        );
+
+        console.log("Users updated with default timeBasedStats successfully.");
+    } catch (error) {
+        console.error("Error updating users:", error);
+    }
+}
+
+// Call the function to update users with default timeBasedStats
+updateUsersWithDefaultTimeBasedStats();

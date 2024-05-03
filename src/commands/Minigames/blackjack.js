@@ -8,6 +8,7 @@ const {
     ActionRowBuilder,
 } = require("discord.js");
 const UserDatabase = require("../../models/userSchema");
+const Big = require("big.js");
 const cards = {
     C2: "<:2C:1233809183447453789>",
     C3: "<:3C:1233809188812099635>",
@@ -103,11 +104,11 @@ class Blackjack {
     }
     calculateHandScore(hand) {
         let score = 0;
-        let hasAce = false;
+        let numAces = 0;
         for (const card of hand) {
             const rank = card.substring(1);
             if (rank === "A") {
-                hasAce = true;
+                numAces++;
                 score += 11;
             } else if (["K", "Q", "J"].includes(rank)) {
                 score += 10;
@@ -115,10 +116,11 @@ class Blackjack {
                 score += parseInt(rank, 10);
             }
         }
-        while (score > 21 && hasAce) {
+        while (score > 21 && numAces > 0) {
             score -= 10;
-            hasAce = false;
+            numAces--;
         }
+
         return score;
     }
     calculateDealerHandScore() {
@@ -261,17 +263,16 @@ class Blackjack {
             } else {
                 desc = `Result: Natural Blackjack`;
                 embed.setColor("Green");
+                const userData = await UserDatabase.findOne({
+                    key: {
+                        userId: this.interaction.user.id,
+                        guildId: this.interaction.guild.id,
+                    },
+                });
                 if (bet) {
-                    const userData = await UserDatabase.findOne({
-                        key: {
-                            userId: this.interaction.user.id,
-                            guildId: this.interaction.guild.id,
-                        },
-                    });
-
                     if (bet === "all") bet = userData.economy.wallet;
                     else bet = parseInt(bet);
-
+                    bet += this.config.economy.minigameReward;
                     const data = await UserDatabase.findOne({
                         key: {
                             userId: this.interaction.user.id,
@@ -321,6 +322,58 @@ class Blackjack {
                             }
                         );
                     }
+                    bet = new Big(bet).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    desc += ` ${this.config.economy.currencySymbol}${bet}`;
+                } else {
+                    if (!this.config.economy.enabled) return;
+                    bet = this.config.economy.minigameReward;
+                    if (
+                        userData.data.minigameStats.find((x) => x.name === "blackjack") ===
+                        undefined
+                    ) {
+                        const minigameStats = {
+                            name: "blackjack",
+                            wins: 1,
+                            losses: 0,
+                            pushes: 0,
+                            currencyGain: bet,
+                            currencyLoss: 0,
+                        };
+                        await UserDatabase.findOneAndUpdate(
+                            {
+                                key: {
+                                    userId: this.interaction.user.id,
+                                    guildId: this.interaction.guild.id,
+                                },
+                            },
+                            {
+                                $inc: { "economy.wallet": bet },
+                                $push: { "data.minigameStats": minigameStats },
+                            }
+                        );
+                    } else {
+                        const minigameStats = userData.data.minigameStats.find(
+                            (x) => x.name === "blackjack"
+                        );
+                        minigameStats.wins++;
+                        minigameStats.currencyGain += bet;
+                        await UserDatabase.findOneAndUpdate(
+                            {
+                                key: {
+                                    userId: this.interaction.user.id,
+                                    guildId: this.interaction.guild.id,
+                                },
+                            },
+                            {
+                                $inc: { "economy.wallet": bet },
+                                $set: { "data.minigameStats.$[x]": userData.data.minigameStats },
+                            },
+                            {
+                                arrayFilters: [{ "x.name": "blackjack" }],
+                            }
+                        );
+                    }
+                    bet = new Big(bet).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                     desc += ` ${this.config.economy.currencySymbol}${bet}`;
                 }
             }
@@ -485,6 +538,7 @@ class Blackjack {
                 });
                 if (bet === "all") bet = userData.economy.wallet;
                 else bet = parseInt(bet);
+                bet += config.economy.minigameReward;
                 if (this.doubleDowned) bet *= 2;
                 let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
                 if (stats === undefined) {
@@ -527,6 +581,7 @@ class Blackjack {
                         { arrayFilters: [{ "x.name": "blackjack" }] }
                     );
                 }
+                bet = new Big(bet).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 desc += ` ${this.config.economy.currencySymbol}-${bet}`;
             }
         } else if (this.dealerScore > 21) {
@@ -538,6 +593,7 @@ class Blackjack {
                 });
                 if (bet === "all") bet = userData.economy.wallet;
                 else bet = parseInt(bet);
+                bet += this.config.economy.minigameReward;
                 if (this.doubleDowned) bet *= 2;
                 let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
                 if (stats === undefined) {
@@ -559,7 +615,7 @@ class Blackjack {
                             },
                         },
                         {
-                            $inc: { "economy.wallet": -bet },
+                            $inc: { "economy.wallet": bet },
                             $push: { "data.minigameStats": stats },
                         }
                     );
@@ -574,12 +630,65 @@ class Blackjack {
                             },
                         },
                         {
-                            $inc: { "economy.wallet": -bet },
+                            $inc: { "economy.wallet": bet },
                             $set: { "data.minigameStats.$[x]": stats },
                         },
                         { arrayFilters: [{ "x.name": "blackjack" }] }
                     );
                 }
+                bet = new Big(bet).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                desc += ` ${this.config.economy.currencySymbol}${bet}`;
+            } else {
+                if (!this.config.economy.enabled) return;
+                bet = this.config.economy.minigameReward;
+                if (this.doubleDowned) bet *= 2;
+                const userData = await UserDatabase.findOne({
+                    key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
+                });
+                if (userData.data.minigameStats.find((x) => x.name === "blackjack") === undefined) {
+                    const minigameStats = {
+                        name: "blackjack",
+                        wins: 1,
+                        losses: 0,
+                        pushes: 0,
+                        currencyGain: bet,
+                        currencyLoss: 0,
+                    };
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": bet },
+                            $push: { "data.minigameStats": minigameStats },
+                        }
+                    );
+                } else {
+                    const minigameStats = userData.data.minigameStats.find(
+                        (x) => x.name === "blackjack"
+                    );
+                    minigameStats.wins++;
+                    minigameStats.currencyGain += bet;
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": bet },
+                            $set: { "data.minigameStats.$[x]": userData.data.minigameStats },
+                        },
+                        {
+                            arrayFilters: [{ "x.name": "blackjack" }],
+                        }
+                    );
+                }
+                bet = new Big(bet).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 desc += ` ${this.config.economy.currencySymbol}${bet}`;
             }
         } else if (this.playerScore > this.dealerScore) {
@@ -591,6 +700,7 @@ class Blackjack {
                 });
                 if (bet === "all") bet = userData.economy.wallet;
                 else bet = parseInt(bet);
+                bet += config.economy.minigameReward;
                 if (this.doubleDowned) bet *= 2;
                 let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
                 if (stats === undefined) {
@@ -612,7 +722,7 @@ class Blackjack {
                             },
                         },
                         {
-                            $inc: { "economy.wallet": -bet },
+                            $inc: { "economy.wallet": bet },
                             $push: { "data.minigameStats": stats },
                         }
                     );
@@ -627,12 +737,65 @@ class Blackjack {
                             },
                         },
                         {
-                            $inc: { "economy.wallet": -bet },
+                            $inc: { "economy.wallet": bet },
                             $set: { "data.minigameStats.$[x]": stats },
                         },
                         { arrayFilters: [{ "x.name": "blackjack" }] }
                     );
                 }
+                bet = new Big(bet).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                desc += ` ${this.config.economy.currencySymbol}${bet}`;
+            } else {
+                if (!this.config.economy.enabled) return;
+                bet = this.config.economy.minigameReward;
+                if (this.doubleDowned) bet *= 2;
+                const userData = await UserDatabase.findOne({
+                    key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
+                });
+                if (userData.data.minigameStats.find((x) => x.name === "blackjack") === undefined) {
+                    const minigameStats = {
+                        name: "blackjack",
+                        wins: 1,
+                        losses: 0,
+                        pushes: 0,
+                        currencyGain: bet,
+                        currencyLoss: 0,
+                    };
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": bet },
+                            $push: { "data.minigameStats": minigameStats },
+                        }
+                    );
+                } else {
+                    const minigameStats = userData.data.minigameStats.find(
+                        (x) => x.name === "blackjack"
+                    );
+                    minigameStats.wins++;
+                    minigameStats.currencyGain += bet;
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": bet },
+                            $set: { "data.minigameStats.$[x]": userData.data.minigameStats },
+                        },
+                        {
+                            arrayFilters: [{ "x.name": "blackjack" }],
+                        }
+                    );
+                }
+                bet = new Big(bet).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 desc += ` ${this.config.economy.currencySymbol}${bet}`;
             }
         } else if (this.playerScore < this.dealerScore) {
@@ -686,6 +849,7 @@ class Blackjack {
                         { arrayFilters: [{ "x.name": "blackjack" }] }
                     );
                 }
+                bet = new Big(bet).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 desc += ` ${this.config.economy.currencySymbol}-${bet}`;
             }
         } else {

@@ -10,9 +10,12 @@ const {
     Collection,
     WebhookClient,
     IntentsBitField,
+    DiscordAPIError,
 } = require(`discord.js`);
 const { ImgurClient } = require("imgur");
 const ServerConfig = require("./models/serverConfigs");
+const UserDatabase = require("./models/userSchema");
+const retryUpdate = require("./utils/retryUpdate");
 const fs = require("fs");
 const client = new Client({
     intents: [
@@ -43,7 +46,6 @@ require("dotenv").config();
 const functions = fs.readdirSync("./src/functions").filter((file) => file.endsWith(".js"));
 const eventFiles = fs.readdirSync("./src/events").filter((file) => file.endsWith(".js"));
 const commandFolders = fs.readdirSync("./src/commands");
-
 (async () => {
     for (file of functions) {
         require(`./functions/${file}`)(client);
@@ -88,6 +90,7 @@ const commandFolders = fs.readdirSync("./src/commands");
 
 const embed = new EmbedBuilder().setColor("Red").setAuthor({ name: `[BOT]` });
 process.on("unhandledRejection", (reason, promise) => {
+    if (reason instanceof DiscordAPIError && reason.code === 10062) return;
     let reasonString = reason instanceof Error ? reason.stack : String(reason);
     embed.setDescription(
         `\`\`\`ansi\n[0;31m[BOT] Unhandled Rejection at ${promise}\n[BOT] Unhandled Rejection reason:\n${reasonString}\`\`\``
@@ -131,3 +134,30 @@ process.on("uncaughtExceptionMonitor", (error, origin) => {
         }\n${new Date(Date.now())}`.red
     );
 });
+
+setInterval(async () => {
+    console.log("Updating time based stats...");
+    const updateQuery = {};
+    const now = new Date();
+    updateQuery["data.timeBasedStats.dailyMessages"] = 0;
+    if (now.getDay() === 1) {
+        updateQuery["data.timeBasedStats.weeklyMessages"] = 0;
+    }
+    if (now.getDate() === 1) {
+        updateQuery["data.timeBasedStats.monthlyMessages"] = 0;
+    }
+    if (now.getMonth() === 0 && now.getDate() === 1) {
+        updateQuery["data.timeBasedStats.yearlyMessages"] = 0;
+    }
+    try {
+        const result = await UserDatabase.updateMany({}, { $set: updateQuery });
+        console.log(`${result.modifiedCount} documents updated.`);
+        if (result.modifiedCount === 0) return;
+        let success = await retryUpdate(updateQuery);
+        while (!success) {
+            success = await retryUpdate(updateQuery);
+        }
+    } catch (error) {
+        console.error("Error updating documents:", error);
+    }
+}, 1000 * 60 * 60 * 24);

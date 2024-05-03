@@ -17,6 +17,23 @@ async function removeRole(config, message) {
         await message.member.roles.remove(role);
     }
 }
+function getMonthName(monthIndex) {
+    const months = [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    ];
+    return months[monthIndex];
+}
 
 module.exports = {
     name: "messageCreate",
@@ -40,14 +57,72 @@ module.exports = {
         });
         // update message counter
         try {
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth();
+            const updateFields = {
+                $inc: {
+                    "data.messages": 1,
+                    "data.timeBasedStats.dailyMessages": 1,
+                    "data.timeBasedStats.weeklyMessages": 1,
+                    "data.timeBasedStats.monthlyMessages": 1,
+                    "data.timeBasedStats.yearlyMessages": 1,
+                },
+            };
+            const exists = user.data.timeBasedStats.totalMessages.findIndex(
+                (x) => x.year === currentYear
+            );
+            if (exists !== -1) {
+                const monthName = getMonthName(currentMonth);
+                updateFields.$inc[`data.timeBasedStats.totalMessages.${exists}.${monthName}`] = 1;
+            } else {
+                const stats = {
+                    year: currentYear,
+                    january: 0,
+                    february: 0,
+                    march: 0,
+                    april: 0,
+                    may: 0,
+                    june: 0,
+                    july: 0,
+                    august: 0,
+                    september: 0,
+                    october: 0,
+                    november: 0,
+                    december: 0,
+                };
+                stats[getMonthName(currentMonth)] = 1;
+                updateFields.$push = { "data.timeBasedStats.totalMessages": stats };
+            }
             await Userdatabase.findOneAndUpdate(
-                { key: { userId: message.author.id, guildId: message.guild.id } },
-                { $inc: { "data.messages": 1 } }
+                { "key.userId": message.author.id, "key.guildId": message.guild.id },
+                updateFields
             );
         } catch (error) {
             const newUser = await Userdatabase.create({
                 key: { userId: message.author.id, guildId: message.guild.id },
                 "economy.wallet": config.economy.baseBalance,
+                "data.messages": 1,
+                "data.timeBasedStats.dailyMessages": 1,
+                "data.timeBasedStats.weeklyMessages": 1,
+                "data.timeBasedStats.monthlyMessages": 1,
+                "data.timeBasedStats.yearlyMessages": 1,
+                ["data.timeBasedStats.totalMessages"]: [
+                    {
+                        year: new Date().getFullYear(),
+                        january: 0,
+                        february: 0,
+                        march: 0,
+                        april: 0,
+                        may: 0,
+                        june: 0,
+                        july: 0,
+                        august: 0,
+                        september: 0,
+                        october: 0,
+                        november: 0,
+                        december: 0,
+                    },
+                ],
             });
             newUser.data.messages = 1;
             await newUser.save();
