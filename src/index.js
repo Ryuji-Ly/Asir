@@ -41,7 +41,7 @@ const client = new Client({
 const mongoose = require("mongoose");
 const webhookClient = new WebhookClient({ url: process.env.discordWebhook });
 const lncWebhook = new WebhookClient({ url: process.env.lncWebhook });
-
+const scraperWebhook = new WebhookClient({ url: process.env.scraperWebhook });
 client.commands = new Collection();
 client.configs = new Collection();
 
@@ -181,6 +181,7 @@ setInterval(async () => {
         let totalPages = 1;
         const novelsData = [];
         const updatedNovels = [];
+        const updatedChapterNovels = [];
         (async () => {
             const browser = await puppeteer.launch({ headless: true });
             const page = await browser.newPage();
@@ -197,7 +198,16 @@ setInterval(async () => {
                 );
                 return lastPage;
             });
-            console.log("Total pages to scrape:", totalPages);
+            scraperWebhook.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setAuthor({ name: `[LNC]` })
+                        .setDescription(
+                            `\`\`\`ansi\n[0;32m[LNC] Starting to scrape ${totalPages} pages...\`\`\``
+                        ),
+                ],
+            });
             for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
                 const url = `${baseURL}${pageNumber}`;
                 await page.goto(url, { waitUntil: "domcontentloaded" });
@@ -209,6 +219,27 @@ setInterval(async () => {
                         links.push(novelURL);
                     });
                     return links;
+                });
+                const novelTitles = await page.evaluate(() => {
+                    const novelItems = document.querySelectorAll(".novel-list .novel-item");
+                    const titles = [];
+                    novelItems.forEach((item) => {
+                        const title = item.querySelector(".cover-wrap a").getAttribute("title");
+                        titles.push(title);
+                    });
+                    return titles;
+                });
+                scraperWebhook.send({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor("Green")
+                            .setAuthor({ name: `[LNC]` })
+                            .setDescription(
+                                `\`\`\`ansi\n[0;32m[LNC] Scraping page ${pageNumber} of ${totalPages}...\nNovels: ${novelTitles.join(
+                                    "\n"
+                                )}\`\`\``
+                            ),
+                    ],
                 });
                 for (const novelLink of novelLinks) {
                     const novelURL = `https://www.lightnovelcave.com${novelLink}`;
@@ -250,20 +281,56 @@ setInterval(async () => {
                         return numChapter;
                     });
                     NovelDetails.views = await page.evaluate(() => {
-                        const views = parseInt(
+                        const stringToNumber = (str) => {
+                            const regex = /^(\d+(\.\d+)?)([BMK])$/;
+                            const match = str.match(regex);
+                            if (!match) {
+                                return parseInt(str, 10);
+                            }
+                            const numericPart = parseFloat(match[1]);
+                            const suffix = match[3];
+                            switch (suffix) {
+                                case "B":
+                                    return numericPart * 1000000000;
+                                case "M":
+                                    return numericPart * 1000000;
+                                case "K":
+                                    return numericPart * 1000;
+                                default:
+                                    return parseInt(str, 10);
+                            }
+                        };
+                        const views = stringToNumber(
                             document
                                 .querySelector(".header-stats span:nth-child(2) strong")
                                 .textContent.trim()
-                                .replace(/\D/g, "")
                         );
                         return views;
                     });
                     NovelDetails.bookmarks = await page.evaluate(() => {
-                        const bookmarks = parseInt(
+                        const stringToNumber = (str) => {
+                            const regex = /^(\d+(\.\d+)?)([BMK])$/;
+                            const match = str.match(regex);
+                            if (!match) {
+                                return parseInt(str, 10);
+                            }
+                            const numericPart = parseFloat(match[1]);
+                            const suffix = match[3];
+                            switch (suffix) {
+                                case "B":
+                                    return numericPart * 1000000000;
+                                case "M":
+                                    return numericPart * 1000000;
+                                case "K":
+                                    return numericPart * 1000;
+                                default:
+                                    return parseInt(str, 10);
+                            }
+                        };
+                        const bookmarks = stringToNumber(
                             document
                                 .querySelector(".header-stats span:nth-child(3) strong")
                                 .textContent.trim()
-                                .replace(/\D/g, "")
                         );
                         return bookmarks;
                     });
@@ -337,26 +404,29 @@ setInterval(async () => {
                             ],
                         });
                     } else {
-                        updatedNovels.push(NovelDetails);
                         let update = false;
                         let chapterUpdate = false;
                         if (
-                            data.rank !== NovelDetails.rank ||
-                            data.rating !== NovelDetails.rating ||
-                            data.numChapter !== NovelDetails.numChapter ||
-                            data.views !== NovelDetails.views ||
-                            data.bookmarks !== NovelDetails.bookmarks ||
-                            data.status !== NovelDetails.status ||
-                            data.categories !== NovelDetails.categories ||
-                            data.summary !== NovelDetails.summary ||
-                            data.tags !== NovelDetails.tags ||
-                            data.cover !== NovelDetails.cover ||
-                            data.url !== NovelDetails.url
+                            !(
+                                data.rank === NovelDetails.rank &&
+                                data.rating === NovelDetails.rating &&
+                                data.numChapter === NovelDetails.numChapter &&
+                                data.views === NovelDetails.views &&
+                                data.bookmarks === NovelDetails.bookmarks &&
+                                data.status === NovelDetails.status &&
+                                data.categories === NovelDetails.categories &&
+                                data.summary === NovelDetails.summary &&
+                                data.tags === NovelDetails.tags &&
+                                data.cover === NovelDetails.cover &&
+                                data.url === NovelDetails.url
+                            )
                         ) {
                             update = true;
+                            updatedNovels.push(NovelDetails);
                         }
                         if (data.numChapter !== NovelDetails.numChapter) {
                             chapterUpdate = true;
+                            updatedChapterNovels.push(NovelDetails);
                         }
                         if (update) {
                             await novelModel.findByIdAndUpdate(data._id, {
@@ -401,17 +471,21 @@ setInterval(async () => {
                     await new Promise((resolve) => setTimeout(resolve, 500));
                 }
             }
+
             await browser.close();
-            console.log("Total novels scraped:", novelsData.length);
-            console.log("Total novels updated:", updatedNovels.length);
-            const novels = await novelModel.find();
-            console.log("Novels saved to database:", novels.length);
             const end = new Date();
             const time = end - now;
             const { hours, minutes, seconds } = parseMilliseconds(time);
-            console.log(
-                `Time taken to scrape ${novelsData.length} novels: ${hours}h ${minutes}m ${seconds}s`
-            );
+            scraperWebhook.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Green")
+                        .setAuthor({ name: `[LNC]` })
+                        .setDescription(
+                            `\`\`\`ansi\n[0;32m[LNC] Finished scraping ${totalPages} pages.\n[LNC] Total novels scraped: ${novelsData.length}\n[LNC] Total novel with updated data: ${updatedNovels.length}\n[LNC] Total novels with updated chapters: ${updatedChapterNovels.length}\n[LNC] Time taken: ${hours}h ${minutes}m ${seconds}s\`\`\``
+                        ),
+                ],
+            });
         })();
     } catch (error) {
         console.error("Error scraping Light Novel Cave:", error);

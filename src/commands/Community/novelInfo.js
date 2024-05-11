@@ -7,6 +7,17 @@ const {
 const UserDatabase = require("../../models/userSchema");
 const Big = require("big.js");
 const novelModel = require("../../models/novels");
+function numberToStringWithSuffix(num) {
+    if (num >= 1000000000) {
+        return (num / 1000000000).toFixed(1) + "B";
+    } else if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + "M";
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + "K";
+    } else {
+        return num.toString();
+    }
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -46,8 +57,16 @@ module.exports = {
                         { name: "Rating", value: `${data.rating}`, inline: true },
                         { name: "Status", value: data.status, inline: true },
                         { name: "Number of Chapters", value: `${data.numChapter}`, inline: true },
-                        { name: "Views", value: `${data.views}`, inline: true },
-                        { name: "Bookmarks", value: `${data.bookmarks}`, inline: true }
+                        {
+                            name: "Views",
+                            value: `${numberToStringWithSuffix(data.views)}`,
+                            inline: true,
+                        },
+                        {
+                            name: "Bookmarks",
+                            value: `${numberToStringWithSuffix(data.bookmarks)}`,
+                            inline: true,
+                        }
                     )
                     .setDescription(
                         `**Summary:** ${data.summary}\n\n**Categories:** ${data.categories.join(
@@ -81,8 +100,16 @@ module.exports = {
                                 value: `${data.numChapter}`,
                                 inline: true,
                             },
-                            { name: "Views", value: `${data.views}`, inline: true },
-                            { name: "Bookmarks", value: `${data.bookmarks}`, inline: true }
+                            {
+                                name: "Views",
+                                value: `${numberToStringWithSuffix(data.views)}`,
+                                inline: true,
+                            },
+                            {
+                                name: "Bookmarks",
+                                value: `${numberToStringWithSuffix(data.bookmarks)}`,
+                                inline: true,
+                            }
                         )
                         .setDescription(chunks[i])
                         .setThumbnail(data.cover)
