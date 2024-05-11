@@ -5,12 +5,11 @@ const {
     PermissionFlagsBits,
 } = require("discord.js");
 const UserDatabase = require("../../models/userSchema");
-const handleCooldowns = require("../../utils/handleCooldowns");
 const Big = require("big.js");
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("message-count-ldb")
-        .setDescription("Displays the top 10 users with the most messages"),
+        .setName("yearly-messages")
+        .setDescription("Show a leaderboard of the daily most active users in the server"),
     /**
      *
      *
@@ -24,20 +23,22 @@ module.exports = {
         });
         let data = await UserDatabase.find({ "key.guildId": guild.id }).select("-_id key data");
         data.sort((a, b) => {
-            if (a.data.messages === b.data.messages) {
+            if (a.data.timeBasedStats.yearlyMessages === b.data.timeBasedStats.yearlyMessages) {
                 return a.key.userId - b.key.userId;
             } else {
-                return b.data.messages - a.data.messages;
+                return b.data.timeBasedStats.yearlyMessages - a.data.timeBasedStats.yearlyMessages;
             }
         });
         const currentRank = data.findIndex((msg) => msg.key.userId === user.id) + 1;
         const top = data.slice(0, 10);
         const embed = new EmbedBuilder()
-            .setTitle(`**Top 10 most active users**`)
+            .setTitle(`**Top 10 yearly active users**`)
             .setColor("Purple")
             .setTimestamp()
             .setFooter({
-                text: `You are rank ${currentRank}. with ${new Big(userData.data.messages)
+                text: `You are rank ${currentRank}. with ${new Big(
+                    userData.data.timeBasedStats.yearlyMessages
+                )
                     .toString()
                     .replace(/\B(?=(\d{3})+(?!\d))/g, ",")} messages`,
             })
@@ -46,7 +47,7 @@ module.exports = {
         for (let i = 0; i < top.length; i++) {
             const { user } = await interaction.guild.members.fetch(top[i].key.userId);
             if (!user) return;
-            const messagecount = new Big(top[i].data.messages)
+            const messagecount = new Big(top[i].data.timeBasedStats.yearlyMessages)
                 .toString()
                 .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             desc += `**${i + 1}.** ${user}**: ${messagecount} messages**\n`;

@@ -255,7 +255,7 @@ module.exports = {
                 filter,
                 time: 1000 * 60 * 10,
             });
-
+            const timeLeft = Date.now() + 1000 * 60 * 10;
             collector.on("collect", async (i) => {
                 if (i.customId === "spin") {
                     // Add the slots game logic here
@@ -375,7 +375,7 @@ module.exports = {
                     gambleEmbed
                         .setTitle("Slots Result")
                         .setDescription(
-                            `Slot Machine: \n${slotsResult
+                            `<t:${Math.floor(timeLeft / 1000)}:R>\nSlot Machine: \n${slotsResult
                                 .map((row) => row.join(" "))
                                 .join("\n")}\n\n${resultMessage}`
                         )

@@ -78,6 +78,266 @@ class Blackjack {
         this.rounds = 0;
         this.doubleDowned = false;
     }
+    async updateStats() {
+        const userData = await UserDatabase.findOne({
+            key: {
+                userId: this.interaction.user.id,
+                guildId: this.interaction.guild.id,
+            },
+        });
+        const win = this.playerScore > this.dealerScore && this.playerScore <= 21;
+        const push = this.playerScore === this.dealerScore;
+        let bet = this.interaction.options.getString("bet");
+        if (bet) {
+            if (bet === "all") bet = userData.economy.wallet;
+            else bet = parseInt(bet);
+
+            if (push) {
+                let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
+                if (stats === undefined) {
+                    stats = {
+                        name: "blackjack",
+                        wins: 0,
+                        losses: 0,
+                        pushes: 1,
+                        currencyGain: 0,
+                        currencyLoss: 0,
+                    };
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $push: { "data.minigameStats": stats },
+                        }
+                    );
+                } else {
+                    stats.pushes++;
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $set: { "data.minigameStats.$[x]": stats },
+                        },
+                        { arrayFilters: [{ "x.name": "blackjack" }] }
+                    );
+                }
+                return;
+            }
+            if (win) {
+                bet += this.config.economy.minigameReward;
+                let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
+                if (stats === undefined) {
+                    stats = {
+                        name: "blackjack",
+                        wins: 1,
+                        losses: 0,
+                        pushes: 0,
+                        currencyGain: bet,
+                        currencyLoss: 0,
+                    };
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": bet },
+                            $push: { "data.minigameStats": stats },
+                        }
+                    );
+                } else {
+                    stats.wins++;
+                    stats.currencyGain += bet;
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": bet },
+                            $set: { "data.minigameStats.$[x]": stats },
+                        },
+                        { arrayFilters: [{ "x.name": "blackjack" }] }
+                    );
+                }
+            } else {
+                let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
+                if (stats === undefined) {
+                    stats = {
+                        name: "blackjack",
+                        wins: 0,
+                        losses: 1,
+                        pushes: 0,
+                        currencyGain: 0,
+                        currencyLoss: bet,
+                    };
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": -bet },
+                            $push: { "data.minigameStats": stats },
+                        }
+                    );
+                } else {
+                    stats.losses++;
+                    stats.currencyLoss += bet;
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": -bet },
+                            $set: { "data.minigameStats.$[x]": stats },
+                        },
+                        { arrayFilters: [{ "x.name": "blackjack" }] }
+                    );
+                }
+            }
+        } else {
+            if (push) {
+                let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
+                if (stats === undefined) {
+                    stats = {
+                        name: "blackjack",
+                        wins: 0,
+                        losses: 0,
+                        pushes: 1,
+                        currencyGain: 0,
+                        currencyLoss: 0,
+                    };
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $push: { "data.minigameStats": stats },
+                        }
+                    );
+                } else {
+                    stats.pushes++;
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $set: { "data.minigameStats.$[x]": stats },
+                        },
+                        { arrayFilters: [{ "x.name": "blackjack" }] }
+                    );
+                }
+                return;
+            }
+            if (win) {
+                bet = this.config.economy.minigameReward;
+                let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
+                if (stats === undefined) {
+                    stats = {
+                        name: "blackjack",
+                        wins: 1,
+                        losses: 0,
+                        pushes: 0,
+                        currencyGain: bet,
+                        currencyLoss: 0,
+                    };
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": bet },
+                            $push: { "data.minigameStats": stats },
+                        }
+                    );
+                } else {
+                    stats.wins++;
+                    stats.currencyGain += bet;
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": bet },
+                            $set: { "data.minigameStats.$[x]": stats },
+                        },
+                        { arrayFilters: [{ "x.name": "blackjack" }] }
+                    );
+                }
+            } else {
+                bet = this.config.economy.minigameReward;
+                let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
+                if (stats === undefined) {
+                    stats = {
+                        name: "blackjack",
+                        wins: 0,
+                        losses: 1,
+                        pushes: 0,
+                        currencyGain: 0,
+                        currencyLoss: bet,
+                    };
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": -bet },
+                            $push: { "data.minigameStats": stats },
+                        }
+                    );
+                } else {
+                    stats.losses++;
+                    stats.currencyLoss += bet;
+                    await UserDatabase.findOneAndUpdate(
+                        {
+                            key: {
+                                userId: this.interaction.user.id,
+                                guildId: this.interaction.guild.id,
+                            },
+                        },
+                        {
+                            $inc: { "economy.wallet": -bet },
+                            $set: { "data.minigameStats.$[x]": stats },
+                        },
+                        { arrayFilters: [{ "x.name": "blackjack" }] }
+                    );
+                }
+            }
+        }
+    }
     generateDeck() {
         const suits = ["C", "H", "D", "S"];
         const ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
@@ -212,53 +472,6 @@ class Blackjack {
                 embed.setColor("Orange");
                 if (bet) {
                     desc += `, money back`;
-                    const data = await UserDatabase.findOne({
-                        key: {
-                            userId: this.interaction.user.id,
-                            guildId: this.interaction.guild.id,
-                        },
-                    });
-                    if (data.data.minigameStats.find((x) => x.name === "blackjack") === undefined) {
-                        const minigameStats = {
-                            name: "blackjack",
-                            wins: 0,
-                            losses: 0,
-                            pushes: 1,
-                            currencyGain: 0,
-                            currencyLoss: 0,
-                        };
-                        await UserDatabase.findOneAndUpdate(
-                            {
-                                key: {
-                                    userId: this.interaction.user.id,
-                                    guildId: this.interaction.guild.id,
-                                },
-                            },
-                            {
-                                $push: { "data.minigameStats": minigameStats },
-                            }
-                        );
-                    } else {
-                        const minigameStats = data.data.minigameStats.find(
-                            (x) => x.name === "blackjack"
-                        );
-                        minigameStats.pushes++;
-                        await UserDatabase.findOneAndUpdate(
-                            {
-                                key: {
-                                    userId: this.interaction.user.id,
-                                    guildId: this.interaction.guild.id,
-                                },
-                            },
-                            {
-                                $inc: { "economy.wallet": bet },
-                                $set: { "data.minigameStats.$[x].name": data.data.minigameStats },
-                            },
-                            {
-                                arrayFilters: [{ "x.name": "blackjack" }],
-                            }
-                        );
-                    }
                 }
             } else {
                 desc = `Result: Natural Blackjack`;
@@ -270,6 +483,12 @@ class Blackjack {
                     },
                 });
                 if (bet) {
+                    const userData = await UserDatabase.findOne({
+                        key: {
+                            userId: this.interaction.user.id,
+                            guildId: this.interaction.guild.id,
+                        },
+                    });
                     if (bet === "all") bet = userData.economy.wallet;
                     else bet = parseInt(bet);
                     bet += this.config.economy.minigameReward;
@@ -379,6 +598,7 @@ class Blackjack {
             }
             embed.setDescription(desc);
             await this.interaction.editReply({ embeds: [embed], components: [row] });
+            await this.updateStats();
         } else {
             const embed = new EmbedBuilder()
                 .setColor("Purple")
@@ -538,7 +758,6 @@ class Blackjack {
                 });
                 if (bet === "all") bet = userData.economy.wallet;
                 else bet = parseInt(bet);
-                bet += config.economy.minigameReward;
                 if (this.doubleDowned) bet *= 2;
                 let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
                 if (stats === undefined) {
@@ -700,7 +919,7 @@ class Blackjack {
                 });
                 if (bet === "all") bet = userData.economy.wallet;
                 else bet = parseInt(bet);
-                bet += config.economy.minigameReward;
+                bet += this.config.economy.minigameReward;
                 if (this.doubleDowned) bet *= 2;
                 let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
                 if (stats === undefined) {
@@ -937,10 +1156,22 @@ module.exports = {
                 bet === "all" ||
                 (parsedBet > 0 && parsedBet <= userData.economy.wallet && parsedBet <= 100000)
             ) {
+                // if (bet === "all" && userData.economy.wallet < 1) {
+                //     return await interaction.reply({
+                //         content: "You don't have any money in your wallet to bet!",
+                //         ephemeral: true,
+                //     });
+                // }
                 await interaction.deferReply();
                 const game = new Blackjack(interaction, config);
                 game.startGame();
             } else {
+                const name = interaction.commandName;
+                await UserDatabase.findOneAndUpdate(
+                    { key: { userId: interaction.user.id, guildId: interaction.guild.id } },
+                    { $set: { "cooldowns.$[x].value": 0 } },
+                    { arrayFilters: [{ "x.name": name }] }
+                );
                 return await interaction.reply({
                     content:
                         "Please enter a valid positive number, 'all', or an amount within your wallet balance!",

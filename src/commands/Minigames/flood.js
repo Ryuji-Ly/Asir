@@ -68,8 +68,8 @@ module.exports = {
             if (config.economy.enabled) {
                 if (result) {
                     await UserDatabase.findOneAndUpdate(
-                        { userId: user.id },
-                        { $inc: { balance: config.economy.minigameReward } }
+                        { key: { userId: user.id, guildId: guild.id } },
+                        { $inc: { "economy.wallet": config.economy.minigameReward } }
                     );
                     resultMessage += ` You have been awarded **${config.economy.minigameReward}** ${config.economy.currency} ${config.economy.currencySymbol}.`;
                 }

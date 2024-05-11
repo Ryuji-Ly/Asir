@@ -6,6 +6,7 @@ const {
 } = require("discord.js");
 const UserDatabase = require("../../models/userSchema");
 const handleCooldowns = require("../../utils/handleCooldowns");
+const Big = require("big.js");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -41,22 +42,47 @@ module.exports = {
             });
         }
         if (config.economy.enabled) {
+            let wallet = new Big(data.economy.wallet);
+            let bank = new Big(data.economy.bank);
+            wallet = wallet.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            bank = bank.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             embed.addFields(
                 {
                     name: `Wallet`,
-                    value: `${data.economy.wallet} ${config.economy.currencySymbol}`,
+                    value: `${wallet} ${config.economy.currencySymbol}`,
                     inline: true,
                 },
                 {
                     name: `Bank`,
-                    value: `${data.economy.bank} ${config.economy.currencySymbol}`,
+                    value: `${bank} ${config.economy.currencySymbol}`,
                     inline: true,
                 }
             );
         }
         embed.addFields({
             name: `Message count`,
-            value: `${data.data.messages}`,
+            value: `${new Big(data.data.messages)
+                .toString()
+                .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`,
+            inline: true,
+        });
+        embed.addFields({
+            name: `Daily, weekly, monthly, yearly messages`,
+            value: `Daily messages: ${new Big(data.data.timeBasedStats.dailyMessages)
+                .toString()
+                .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}\nWeekly messages: ${new Big(
+                data.data.timeBasedStats.weeklyMessages
+            )
+                .toString()
+                .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}\nMonthly messsages: ${new Big(
+                data.data.timeBasedStats.monthlyMessages
+            )
+                .toString()
+                .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}\nYearly messages: ${new Big(
+                data.data.timeBasedStats.yearlyMessages
+            )
+                .toString()
+                .replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`,
             inline: true,
         });
         let count = 0;
@@ -64,7 +90,11 @@ module.exports = {
             count += data.data.commands[i].value;
         }
         embed.addFields(
-            { name: "Command count", value: `${count}`, inline: true },
+            {
+                name: "Command count",
+                value: `${new Big(count).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`,
+                inline: true,
+            },
             {
                 name: "Warnings & infractions",
                 value: `${data.data.warnings} warnings. ${data.data.infractions.length} infractions.`,

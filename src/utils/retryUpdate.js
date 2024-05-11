@@ -1,23 +1,23 @@
-const UserDatabase = require("../models/userSchema");
+const retryUpdate = async (Model, condition, updateQuery, maxRetries = 3) => {
+    let success = false;
+    let retries = 0;
+    while (!success && retries < maxRetries) {
+        const failedDocuments = await Model.find(condition);
 
-const retryUpdate = async (updateQuery) => {
-    const failedDocuments = await UserDatabase.find({
-        "data.timeBasedStats.dailyMessages": { $ne: 0 },
-    });
-    if (failedDocuments.length > 0) {
-        console.log(`${failedDocuments.length} documents failed to update. Retrying...`);
-        for (const doc of failedDocuments) {
-            await UserDatabase.updateOne({ _id: doc._id }, { $set: updateQuery });
+        if (failedDocuments.length > 0) {
+            console.log(`${failedDocuments.length} documents failed to update. Retrying...`);
+            for (const doc of failedDocuments) {
+                await Model.updateOne({ _id: doc._id }, { $set: updateQuery });
+            }
+            retries++;
+        } else {
+            success = true;
         }
     }
-    const checkFailedDocuments = await UserDatabase.find({
-        "data.timeBasedStats.dailyMessages": { $ne: 0 },
-    });
-    if (checkFailedDocuments.length > 0) {
-        return false;
-    } else {
-        return true;
+    if (!success) {
+        console.log(`Retry limit (${maxRetries}) reached. Some documents could not be updated.`);
     }
+    return success;
 };
 
 module.exports = retryUpdate;

@@ -68,7 +68,7 @@ module.exports = {
                     .setColor("Purple")
                     .setDescription("A member has been kicked")
                     .addFields(
-                        { name: "Issuer", value: user },
+                        { name: "Issuer", value: `${user}` },
                         { name: "Member", value: target.tag },
                         { name: "Reason", value: reason }
                     )

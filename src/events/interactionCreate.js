@@ -10,6 +10,7 @@ const {
     DiscordAPIError,
 } = require("discord.js");
 const UserDatabase = require("../models/userSchema");
+const novelModel = require("../models/novels");
 var colors = require("colors");
 const handleCooldowns = require("../utils/handleCooldowns");
 colors.enable();
@@ -163,6 +164,40 @@ module.exports = {
         //autocomplete options
         try {
             if (interaction.isAutocomplete()) {
+                if (interaction.commandName === "follow-novel") {
+                    const array = await novelModel.find();
+                    const focusedValue = interaction.options.getFocused();
+                    const filterdChoises = array.filter(
+                        (novel) =>
+                            novel.title.toLowerCase().includes(focusedValue.toLowerCase()) &&
+                            novel.title.length <= 100
+                    );
+                    const results = filterdChoises.map((choice) => {
+                        return {
+                            name: `${choice.title}`,
+                            value: `${choice.title}`,
+                        };
+                    });
+                    await interaction.respond(results.slice(0, 25)).catch(() => {});
+                    return;
+                }
+                if (interaction.commandName === "novel") {
+                    const array = await novelModel.find();
+                    const focusedValue = interaction.options.getFocused();
+                    const filterdChoises = array.filter(
+                        (novel) =>
+                            novel.title.toLowerCase().includes(focusedValue.toLowerCase()) &&
+                            novel.title.length <= 100
+                    );
+                    const results = filterdChoises.map((choice) => {
+                        return {
+                            name: `${choice.title}`,
+                            value: `${choice.title}`,
+                        };
+                    });
+                    await interaction.respond(results.slice(0, 25)).catch(() => {});
+                    return;
+                }
                 // if (interaction.commandName === "blacklist-user-command") {
                 //     const array = [...client.commands.values()];
                 //     const focusedValue = interaction.options.getFocused();
@@ -333,6 +368,7 @@ module.exports = {
                     ).value;
                 } else cooldown = 0;
                 if (
+                    interaction.commandName === "gamble" ||
                     interaction.commandName === "2048" ||
                     interaction.commandName === "blackjack" ||
                     interaction.commandName === "flood" ||
