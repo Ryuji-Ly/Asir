@@ -11,41 +11,52 @@ const {
 } = require("discord.js");
 const UserDatabase = require("../models/userSchema");
 const novelModel = require("../models/novels");
+const tagModel = require("../models/tags");
 var colors = require("colors");
 const handleCooldowns = require("../utils/handleCooldowns");
 colors.enable();
-const mapTypes = {
-    plains: 0,
-    lake: 1,
-    mansion: 2,
-    forest: 3,
-    treasureChest: 4,
-    cave: 5,
-    tower: 6,
-    portal: 7,
-    healingFountain: 8,
-    cartographerDesk: 9,
-    enchantedGarden: 10,
-};
-const items = [
-    { name: "Sword", value: 0 },
-    { name: "Bow", value: 1 },
-    { name: "Shield", value: 2 },
-    { name: "Binoculors", value: 3 },
-    { name: "Trap Disarm Kit", value: 4 },
-    { name: "Medical Kit", value: 5 },
-    { name: "Terrain Changer Orb", value: 6 },
-    { name: "Terrain Destroyer Crystal", value: 7 },
-    { name: "Terrain Swapper Amulet", value: 8 },
-    { name: "Map", value: 9 },
-    { name: "Divine Intervention Scroll", value: 10 },
-    { name: "Serenity Pearl", value: 11 },
-    { name: "Revenge Rune", value: 12 },
-    { name: "Divine Shield", value: 13 },
-    { name: "Lifesteal Dagger", value: 14 },
-    { name: "Fate Shifter Amulet", value: 15 },
-    { name: "Celestial Beacon", value: 16 },
-    { name: "Phoenix Feather", value: 17 },
+const categories = [
+    "Fantasy",
+    "Adventure",
+    "Action",
+    "Comedy",
+    "Horror",
+    "Mature",
+    "Supernatural",
+    "Mystery",
+    "Romance",
+    "Video Games",
+    "Tragedy",
+    "Slice of Life",
+    "Historical",
+    "Adult",
+    "Sci-fi",
+    "Harem",
+    "School Life",
+    "Drama",
+    "Seinen",
+    "Wuxia",
+    "Shounen",
+    "Magical Realism",
+    "Psychological",
+    "Yuri",
+    "Xuanhuan",
+    "Smut",
+    "Yaoi",
+    "Xianxia",
+    "Martial Arts",
+    "Shoujo Ai",
+    "Ecchi",
+    "Eastern Fantasy",
+    "Mecha",
+    "Gender Bender",
+    "Josei",
+    "Shoujo",
+    "Shounen Ai",
+    "Fantasy Romance",
+    "Sports",
+    "Contemporary Romance",
+    "Lolicon",
 ];
 
 module.exports = {
@@ -181,6 +192,23 @@ module.exports = {
                     await interaction.respond(results.slice(0, 25)).catch(() => {});
                     return;
                 }
+                if (interaction.commandName === "unfollow-novel") {
+                    const array = await novelModel.find();
+                    const focusedValue = interaction.options.getFocused();
+                    const filterdChoises = array.filter(
+                        (novel) =>
+                            novel.title.toLowerCase().includes(focusedValue.toLowerCase()) &&
+                            novel.title.length <= 100
+                    );
+                    const results = filterdChoises.map((choice) => {
+                        return {
+                            name: `${choice.title}`,
+                            value: `${choice.title}`,
+                        };
+                    });
+                    await interaction.respond(results.slice(0, 25)).catch(() => {});
+                    return;
+                }
                 if (interaction.commandName === "novel") {
                     const array = await novelModel.find();
                     const focusedValue = interaction.options.getFocused();
@@ -197,6 +225,54 @@ module.exports = {
                     });
                     await interaction.respond(results.slice(0, 25)).catch(() => {});
                     return;
+                }
+                if (interaction.commandName === "filter-novel") {
+                    const focusedOption = interaction.options.getFocused(true);
+                    if (focusedOption.name === "genre") {
+                        const filteredChoices = categories.filter((category) =>
+                            category.toLowerCase().startsWith(focusedOption.value.toLowerCase())
+                        );
+                        const results = filteredChoices.map((choice) => {
+                            return {
+                                name: `${choice}`,
+                                value: `${choice}`,
+                            };
+                        });
+                        await interaction.respond(results.slice(0, 25)).catch(() => {});
+                    }
+                    if (focusedOption.name === "tags") {
+                        const tags = await tagModel.findOne({ name: "LNC" });
+                        const array = focusedOption.value.split(",").map((tag) => tag.trim());
+                        const focusedValue = array.pop();
+                        const previousTags = array.join(", ");
+                        const previousTagsArray = previousTags.split(",").map((tag) => tag.trim());
+                        const filteredChoices = tags.tags.filter((tag) => {
+                            const lowerCaseTag = tag.toLowerCase();
+                            const lowerCaseFocusedValue = focusedValue.toLowerCase();
+                            return (
+                                lowerCaseTag.startsWith(lowerCaseFocusedValue) &&
+                                !previousTagsArray.includes(tag)
+                            );
+                        });
+                        const results = filteredChoices.map((choice) => {
+                            if (
+                                previousTags === "" ||
+                                previousTags === undefined ||
+                                previousTags === null
+                            ) {
+                                return {
+                                    name: `${choice}`,
+                                    value: `${choice}`,
+                                };
+                            } else {
+                                return {
+                                    name: `${previousTags}, ${choice}`,
+                                    value: `${previousTags}, ${choice}`,
+                                };
+                            }
+                        });
+                        await interaction.respond(results.slice(0, 25)).catch(() => {});
+                    }
                 }
                 // if (interaction.commandName === "blacklist-user-command") {
                 //     const array = [...client.commands.values()];
@@ -248,7 +324,6 @@ module.exports = {
             });
             console.log(`[INTERACTION CREATE] Error with autocomplete options ${error.stack}`.red);
         }
-
         //execute all commands
         try {
             if (interaction.isChatInputCommand()) {
@@ -285,7 +360,6 @@ module.exports = {
             //         content: "You are blacklisted from this command",
             //         ephemeral: true,
             //     });
-
             const command = client.commands.get(interaction.commandName);
             if (!command) return;
             if (
@@ -305,56 +379,6 @@ module.exports = {
                         });
                     }
                 }
-            }
-            //update commands counter
-            try {
-                let subname = "";
-                try {
-                    subname = interaction.options.getSubcommand();
-                } catch (error) {
-                    process.stdout.write("\r\x1b[K");
-                }
-                let value = interaction.commandName;
-                if (subname !== "") value = `${interaction.commandName} ${subname}`;
-                const name = `${value}`;
-                const filter = {
-                    "key.userId": interaction.user.id,
-                    "key.guildId": interaction.guild.id,
-                    "data.commands.name": name,
-                };
-                const change = {
-                    $inc: {
-                        "data.commands.$.value": 1,
-                    },
-                };
-                const update = await UserDatabase.findOneAndUpdate(filter, change, {
-                    new: true,
-                });
-                if (!update)
-                    await UserDatabase.findOneAndUpdate(
-                        {
-                            key: { userId: interaction.user.id, guildId: interaction.guild.id },
-                        },
-                        {
-                            $push: {
-                                "data.commands": {
-                                    name: `${name}`,
-                                    value: 1,
-                                },
-                            },
-                        }
-                    );
-            } catch (error) {
-                const embed = new EmbedBuilder()
-                    .setColor("Red")
-                    .setAuthor({ name: `[INTERACTION CREATE]` })
-                    .setDescription(
-                        `\`\`\`ansi\n[0;31m[INTERACTION CREATE] error with updating command counter ${error.stack}\`\`\``
-                    );
-                webhookClient.send({ embeds: [embed] }).catch((e) => {
-                    console.log(`[INTERACTION CREATE] Webhook failed to send`.red);
-                });
-                console.log("[INTERACTION CREATE] error with updating command counter".red);
             }
             //check for cooldowns
             try {

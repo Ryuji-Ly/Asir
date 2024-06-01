@@ -6,6 +6,7 @@ const {
 } = require("discord.js");
 const UserDatabase = require("../../models/userSchema");
 const Big = require("big.js");
+const NovelModel = require("../../models/novels");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -25,7 +26,19 @@ module.exports = {
      */
     async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
+        if (guild.id !== "1161001645698715698")
+            return interaction.reply("This command can only be used in Lectorum Nexus.");
         const novel = options.getString("novel");
+        const novelExists = await NovelModel.findOne({ title: novel });
+        if (!novelExists) {
+            return interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Red")
+                        .setDescription("No novel found with that name."),
+                ],
+            });
+        }
         let role = guild.roles.cache.find((role) => role.name === novel);
         if (!role) {
             const notifRolePos = guild.roles.cache.find(

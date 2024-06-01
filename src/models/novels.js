@@ -1,4 +1,3 @@
-const { author } = require("canvacord");
 const mongoose = require("mongoose");
 
 const novelSchema = new mongoose.Schema({

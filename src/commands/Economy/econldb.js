@@ -23,6 +23,7 @@ module.exports = {
                 content: "Economy is disabled in this server.",
                 ephemeral: true,
             });
+        await interaction.deferReply();
         const users = await UserDatabase.find({ "key.guildId": guild.id });
         const sorted = users.sort(
             (a, b) => b.economy.wallet + b.economy.bank - (a.economy.wallet + a.economy.bank)
@@ -48,7 +49,7 @@ module.exports = {
             desc += `**${i + 1}.** ${user}: \`Total ${total}\`\n`;
         }
         embed.setDescription(desc);
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
         return;
     },
 };

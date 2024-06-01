@@ -16,7 +16,10 @@
     "openai": "^4.40.1",
     "parse-ms-2": "^1.0.0",
     "pet-pet-gif": "^1.0.9",
-    "puppeteer": "^22.8.0"
+    "puppeteer": "^22.8.0",
+    "puppeteer-core": "^22.9.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "name": "asir3.0",
   "version": "1.0.0",

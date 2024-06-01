@@ -20,6 +20,11 @@ module.exports = {
      */
     async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
+        return await interaction.reply({
+            content:
+                "This command is currently disabled due to an API error unable to generate the board image.",
+            ephemeral: true,
+        });
         await interaction.deferReply();
         //constants and variables
         const emojis = { up: "⬆️", down: "⬇️", left: "⬅️", right: "➡️" };

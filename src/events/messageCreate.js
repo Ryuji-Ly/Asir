@@ -213,50 +213,61 @@ module.exports = {
             );
         }
         if (message.mentions.users.size > 0) {
-            await message.mentions.users.forEach(async (user) => {
-                const mentionedUser = await Userdatabase.findOne({
-                    key: { userId: user.id, guildId: message.guild.id },
-                });
-                if (mentionedUser) {
-                    if (mentionedUser.data.mentioned.find((x) => x.user)) {
-                        await Userdatabase.findOneAndUpdate(
+            await Promise.all(
+                message.mentions.users.map(async (user) => {
+                    const mentionedUser = await Userdatabase.findOne({
+                        key: { userId: user.id, guildId: message.guild.id },
+                    });
+
+                    if (mentionedUser) {
+                        const mentionIndex = mentionedUser.data.mentioned.findIndex(
+                            (x) => x.user === message.author.id
+                        );
+                        if (mentionIndex !== -1) {
+                            await Userdatabase.updateOne(
+                                {
+                                    key: { userId: user.id, guildId: message.guild.id },
+                                    "data.mentioned.user": message.author.id,
+                                },
+                                { $inc: { "data.mentioned.$.count": 1 } }
+                            );
+                        } else {
+                            const mentioned = { user: message.author.id, count: 1 };
+                            await Userdatabase.updateOne(
+                                {
+                                    key: { userId: user.id, guildId: message.guild.id },
+                                },
+                                { $push: { "data.mentioned": mentioned } }
+                            );
+                        }
+                    }
+
+                    const data = await Userdatabase.findOne({
+                        key: { userId: message.author.id, guildId: message.guild.id },
+                    });
+
+                    const mentionIndexAuthor = data.data.mentions.findIndex(
+                        (x) => x.user === user.id
+                    );
+                    if (mentionIndexAuthor !== -1) {
+                        await Userdatabase.updateOne(
                             {
-                                key: { userId: user.id, guildId: message.guild.id },
+                                key: { userId: message.author.id, guildId: message.guild.id },
+                                "data.mentions.user": user.id,
                             },
-                            { $inc: { "data.mentioned.$[x].count": 1 } },
-                            { arrayFilters: [{ "x.user": message.author.id }] }
+                            { $inc: { "data.mentions.$.count": 1 } }
                         );
                     } else {
-                        const mentioned = { user: message.author.id, count: 1 };
-                        await Userdatabase.findOneAndUpdate(
+                        const mentioned = { user: user.id, count: 1 };
+                        await Userdatabase.updateOne(
                             {
-                                key: { userId: user.id, guildId: message.guild.id },
+                                key: { userId: message.author.id, guildId: message.guild.id },
                             },
-                            { $push: { "data.mentioned": mentioned } }
+                            { $push: { "data.mentions": mentioned } }
                         );
                     }
-                }
-                const data = await Userdatabase.findOne({
-                    key: { userId: message.author.id, guildId: message.guild.id },
-                });
-                if (data.data.mentions.find((x) => x.user === user.id)) {
-                    await Userdatabase.findOneAndUpdate(
-                        {
-                            key: { userId: message.author.id, guildId: message.guild.id },
-                        },
-                        { $inc: { "data.mentions.$[x].count": 1 } },
-                        { arrayFilters: [{ "x.user": user.id }] }
-                    );
-                } else {
-                    const mentioned = { user: user.id, count: 1 };
-                    await Userdatabase.findOneAndUpdate(
-                        {
-                            key: { userId: message.author.id, guildId: message.guild.id },
-                        },
-                        { $push: { "data.mentions": mentioned } }
-                    );
-                }
-            });
+                })
+            );
         }
         //if no user, create new user
         if (!user) {
@@ -421,99 +432,99 @@ module.exports = {
             console.log(`[MESSAGE CREATE] Error updating levels ${error}`.red);
         }
         // chatbot logic
-        try {
-            const { author, channel, content, mentions } = message;
-            const channelId = channel.id;
-            async function handleConversationStart(message) {
-                const { channel } = message;
-                try {
-                    channel.sendTyping(); // Send initial typing indicator
-                    const conversation = await getConversationHistory(message);
-                    const response = await openai.chat.completions.create({
-                        model: "gpt-4",
-                        messages: conversation,
-                    });
+        // try {
+        //     const { author, channel, content, mentions } = message;
+        //     const channelId = channel.id;
+        //     async function handleConversationStart(message) {
+        //         const { channel } = message;
+        //         try {
+        //             channel.sendTyping(); // Send initial typing indicator
+        //             const conversation = await getConversationHistory(message);
+        //             const response = await openai.chat.completions.create({
+        //                 model: "gpt-4",
+        //                 messages: conversation,
+        //             });
 
-                    await handleResponse(message, response);
-                } catch (error) {
-                    console.error(`Error with ChatGPT: ${error}`);
-                    await message.reply("I'm sorry, I couldn't understand that.");
-                }
-            }
-            async function handleConversationContinue(message) {
-                const { channel } = message;
+        //             await handleResponse(message, response);
+        //         } catch (error) {
+        //             console.error(`Error with ChatGPT: ${error}`);
+        //             await message.reply("I'm sorry, I couldn't understand that.");
+        //         }
+        //     }
+        //     async function handleConversationContinue(message) {
+        //         const { channel } = message;
 
-                try {
-                    channel.sendTyping(); // Send typing indicator
-                    const conversation = await getConversationHistory(message);
-                    const response = await openai.chat.completions.create({
-                        model: "gpt-4",
-                        messages: conversation,
-                    });
+        //         try {
+        //             channel.sendTyping(); // Send typing indicator
+        //             const conversation = await getConversationHistory(message);
+        //             const response = await openai.chat.completions.create({
+        //                 model: "gpt-4",
+        //                 messages: conversation,
+        //             });
 
-                    await handleResponse(message, response);
-                } catch (error) {
-                    console.error(`Error with ChatGPT: ${error}`);
-                    await message.reply("I'm sorry, I couldn't understand that.");
-                }
-            }
-            async function getConversationHistory(message) {
-                const { channel } = message;
-                const prevMessages = await channel.messages.fetch({ limit: 10 });
-                const conversation = [];
+        //             await handleResponse(message, response);
+        //         } catch (error) {
+        //             console.error(`Error with ChatGPT: ${error}`);
+        //             await message.reply("I'm sorry, I couldn't understand that.");
+        //         }
+        //     }
+        //     async function getConversationHistory(message) {
+        //         const { channel } = message;
+        //         const prevMessages = await channel.messages.fetch({ limit: 10 });
+        //         const conversation = [];
 
-                prevMessages.reverse().forEach((msg) => {
-                    if (!msg.author.bot || msg.author.id === client.user.id) {
-                        const role = msg.author.id === client.user.id ? "assistant" : "user";
-                        const username = msg.author.username.replace(/[^a-zA-Z0-9_-]/g, ""); // Sanitize username
-                        conversation.push({ role, name: username, content: msg.content });
-                    }
-                });
+        //         prevMessages.reverse().forEach((msg) => {
+        //             if (!msg.author.bot || msg.author.id === client.user.id) {
+        //                 const role = msg.author.id === client.user.id ? "assistant" : "user";
+        //                 const username = msg.author.username.replace(/[^a-zA-Z0-9_-]/g, ""); // Sanitize username
+        //                 conversation.push({ role, name: username, content: msg.content });
+        //             }
+        //         });
 
-                conversation.push({ role: "system", content: "Chat GPT is a friendly chatbot." });
-                return conversation;
-            }
-            async function handleResponse(message, response) {
-                const { channel } = message;
+        //         conversation.push({ role: "system", content: "Chat GPT is a friendly chatbot." });
+        //         return conversation;
+        //     }
+        //     async function handleResponse(message, response) {
+        //         const { channel } = message;
 
-                if (response && response.choices.length > 0) {
-                    const responseMsg = response.choices[0].message.content;
-                    const chunkSizeLimit = 2000;
-                    for (let i = 0; i < responseMsg.length; i += chunkSizeLimit) {
-                        const chunk = responseMsg.substring(i, i + chunkSizeLimit);
-                        await message.reply(chunk);
-                    }
-                } else {
-                    await message.reply("I'm sorry, I couldn't understand that.");
-                }
-            }
-            if (
-                author.bot ||
-                (!allowedChannels.includes(channelId) &&
-                    !activeConversations.has(channel.id) &&
-                    author.id !== allowedUserId)
-            )
-                return;
-            const isBotMentioned = mentions.has(client.user.id);
-            const isChatTriggered = isBotMentioned;
-            if (isChatTriggered) {
-                if (!activeConversations.has(channelId)) {
-                    activeConversations.add(channelId); // Start conversation for this channel
-                    await handleConversationStart(message);
-                } else {
-                    await handleConversationContinue(message);
-                }
-                if (endTriggers.some((trigger) => content.toLowerCase().includes(trigger))) {
-                    activeConversations.delete(channelId);
-                }
-            } else {
-                if (endTriggers.some((trigger) => content.toLowerCase().includes(trigger))) {
-                    activeConversations.delete(channelId);
-                }
-            }
-        } catch (error) {
-            console.error(`Error with ChatGPT: ${error}`);
-        }
+        //         if (response && response.choices.length > 0) {
+        //             const responseMsg = response.choices[0].message.content;
+        //             const chunkSizeLimit = 2000;
+        //             for (let i = 0; i < responseMsg.length; i += chunkSizeLimit) {
+        //                 const chunk = responseMsg.substring(i, i + chunkSizeLimit);
+        //                 await message.reply(chunk);
+        //             }
+        //         } else {
+        //             await message.reply("I'm sorry, I couldn't understand that.");
+        //         }
+        //     }
+        //     if (
+        //         author.bot ||
+        //         (!allowedChannels.includes(channelId) &&
+        //             !activeConversations.has(channel.id) &&
+        //             author.id !== allowedUserId)
+        //     )
+        //         return;
+        //     const isBotMentioned = mentions.has(client.user.id);
+        //     const isChatTriggered = isBotMentioned;
+        //     if (isChatTriggered) {
+        //         if (!activeConversations.has(channelId)) {
+        //             activeConversations.add(channelId); // Start conversation for this channel
+        //             await handleConversationStart(message);
+        //         } else {
+        //             await handleConversationContinue(message);
+        //         }
+        //         if (endTriggers.some((trigger) => content.toLowerCase().includes(trigger))) {
+        //             activeConversations.delete(channelId);
+        //         }
+        //     } else {
+        //         if (endTriggers.some((trigger) => content.toLowerCase().includes(trigger))) {
+        //             activeConversations.delete(channelId);
+        //         }
+        //     }
+        // } catch (error) {
+        //     console.error(`Error with ChatGPT: ${error}`);
+        // }
         return;
     },
 };

@@ -24,7 +24,7 @@ module.exports = {
         const groupdata = await GroupModel.findOne({
             groupMemberIds: interaction.user.id,
         });
-        let groupmultiplier = 1;
+        let groupmultiplier = 0;
         if (groupdata) {
             groupmultiplier = groupdata.groupMultiplier;
         }

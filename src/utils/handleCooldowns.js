@@ -1,4 +1,4 @@
-const { Interaction } = require("discord.js");
+const { Interaction, EmbedBuilder, WebhookClient } = require("discord.js");
 const UserDatabase = require("../models/userSchema");
 const parseMilliseconds = require("parse-ms-2");
 
@@ -7,65 +7,108 @@ const parseMilliseconds = require("parse-ms-2");
  * @param {Interaction} interaction
  */
 const handleCooldowns = async (interaction, cooldown) => {
+    const webhookClient = new WebhookClient({ url: process.env.discordWebhook });
+    const embed = new EmbedBuilder()
+        .setTitle(`[COOLDOWN HANDLER] - ${interaction.user.username} - ${interaction.commandName}`)
+        .setColor("Purple");
+    let desc = "";
+    const start = Date.now();
     let subname = "";
     try {
         subname = interaction.options.getSubcommand();
     } catch (error) {
-        process.stdout.write("\r\x1b[K");
+        subname = "";
     }
     let value = interaction.commandName;
     if (subname !== "") value = `${interaction.commandName} ${subname}`;
     const name = `${value}`;
-    //checking if cooldown exists
-    let data = await UserDatabase.findOne({
-        key: { guildId: interaction.guild.id, userId: interaction.user.id },
-        "cooldowns.name": `${name}`,
-    });
-    if (!data) {
-        data = await UserDatabase.findOne({
+    try {
+        const result = await UserDatabase.findOneAndUpdate(
+            {
+                key: { userId: interaction.user.id, guildId: interaction.guild.id },
+                "data.commands.name": name,
+            },
+            {
+                $inc: { "data.commands.$.value": 1 },
+            },
+            {
+                new: true,
+                upsert: true,
+            }
+        ).catch(() => {});
+        if (!result) {
+            await UserDatabase.findOneAndUpdate(
+                { key: { userId: interaction.user.id, guildId: interaction.guild.id } },
+                {
+                    $push: { "data.commands": { name: name, value: 1 } },
+                }
+            );
+        }
+        desc += `Updated command counter in ${Date.now() - start}ms\n`;
+        let user = await UserDatabase.findOne({
             key: { userId: interaction.user.id, guildId: interaction.guild.id },
         });
-        const newCooldown = {
-            name: name,
-            value: 0,
-        };
-        data.cooldowns.push(newCooldown);
-        await data.save();
-    }
-    const user = await UserDatabase.findOne({
-        key: { userId: interaction.user.id, guildId: interaction.guildId },
-    });
-    const lastUsed = await user.cooldowns.find((c) => c.name === name).value;
-    const timeLeft = cooldown - (Date.now() - lastUsed);
-    if (interaction.user.id === "348902272534839296") return true;
-    if (timeLeft > 0) {
-        const { hours, minutes, seconds } = parseMilliseconds(timeLeft);
-        await interaction
-            .reply({
-                content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
-                    (Date.now() + timeLeft) / 1000
-                )}:R>`,
-                ephemeral: true,
-            })
-            .catch(
-                async (e) =>
-                    await interaction
-                        .editReply({
-                            content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
-                                (Date.now() + timeLeft) / 1000
-                            )}:R>`,
-                            ephemeral: true,
-                        })
-                        .catch((e) => {})
-            );
-        return false;
-    } else {
-        await UserDatabase.findOneAndUpdate(
-            { key: { userId: interaction.user.id, guildId: interaction.guild.id } },
-            { $set: { "cooldowns.$[x].value": Date.now() } },
-            { arrayFilters: [{ "x.name": name }] }
-        );
+        if (!user) {
+            user = new UserDatabase({
+                key: { userId: interaction.user.id, guildId: interaction.guild.id },
+            });
+        }
+        if (cooldown > 0) {
+            // Handle cooldowns
+            let cooldownData = user.cooldowns.find((c) => c.name === name);
+            if (!cooldownData) {
+                cooldownData = { name: name, value: 0 };
+                user.cooldowns.push(cooldownData);
+            }
+            const lastUsed = cooldownData.value;
+            const timeLeft = cooldown - (Date.now() - lastUsed);
+            if (interaction.user.id === "348902272534839296") {
+                await user.save();
+                return true;
+            }
+            if (timeLeft > 0) {
+                const { hours, minutes, seconds } = parseMilliseconds(timeLeft);
+                await interaction
+                    .reply({
+                        content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
+                            (Date.now() + timeLeft) / 1000
+                        )}:R>`,
+                        ephemeral: true,
+                    })
+                    .catch(async (e) => {
+                        await interaction
+                            .editReply({
+                                content: `:x: Please wait ${hours} hrs ${minutes} min ${seconds} sec before trying again. This command is available <t:${Math.floor(
+                                    (Date.now() + timeLeft) / 1000
+                                )}:R>`,
+                                ephemeral: true,
+                            })
+                            .catch((e) => {});
+                    });
+                console.log(
+                    `Cooldown handler line 70, saving user data in ${Date.now() - start}ms`
+                );
+                await user.save();
+                console.log(
+                    `Cooldown handler line 74, update user data done in ${Date.now() - start}ms`
+                );
+                return false;
+            } else {
+                cooldownData.value = Date.now();
+            }
+        }
+        desc += `Updated cooldown in ${Date.now() - start}ms\n`;
+        await user.save();
+        desc += `Update user data done in ${Date.now() - start}ms`;
+        if (Date.now() - start > 3000) {
+            webhookClient.send({
+                embeds: [embed.setDescription(desc)],
+            });
+        }
         return true;
+    } catch (error) {
+        console.log(error);
+        return false;
     }
 };
 

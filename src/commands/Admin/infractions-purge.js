@@ -30,7 +30,10 @@ module.exports = {
         const data = await UserDatabase.findOne({ key: { userId: target.id, guildId: guild.id } });
         if (data.data.infractions.length === 0)
             return interaction.reply({ content: "This user has no infractions", ephemeral: true });
-        data.data.infractions = [];
+        await UserDatabase.updateOne(
+            { key: { userId: target.id, guildId: guild.id } },
+            { $set: { "data.infractions": [] } }
+        );
         await data.save();
         const embed = new EmbedBuilder()
             .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })

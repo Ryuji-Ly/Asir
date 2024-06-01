@@ -1156,12 +1156,12 @@ module.exports = {
                 bet === "all" ||
                 (parsedBet > 0 && parsedBet <= userData.economy.wallet && parsedBet <= 100000)
             ) {
-                // if (bet === "all" && userData.economy.wallet < 1) {
-                //     return await interaction.reply({
-                //         content: "You don't have any money in your wallet to bet!",
-                //         ephemeral: true,
-                //     });
-                // }
+                if (bet === "all" && userData.economy.wallet < 1) {
+                    return await interaction.reply({
+                        content: "You don't have any money in your wallet to bet!",
+                        ephemeral: true,
+                    });
+                }
                 await interaction.deferReply();
                 const game = new Blackjack(interaction, config);
                 game.startGame();

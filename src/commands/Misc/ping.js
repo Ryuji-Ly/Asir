@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, Interaction, EmbedBuilder, Client } = require("discord.js");
-const handleCooldowns = require("../../utils/handleCooldowns");
+const mongoose = require("mongoose");
+const UserDatabase = require("../../models/userSchema");
 
 module.exports = {
     data: new SlashCommandBuilder().setName("ping").setDescription("Replies with Pong!"),
@@ -25,26 +26,43 @@ module.exports = {
         const seconds = Math.floor(interaction.client.uptime / 1000) % 60;
         const wsEmoji = ws <= 100 ? circles.good : ws <= 200 ? circles.okay : circles.bad;
         const msgEmoji = msgEdit <= 200 ? circles.good : circles.bad;
-        const embed = new EmbedBuilder()
-            .setThumbnail(client.user.displayAvatarURL())
-            .setColor("Blurple")
-            .setTimestamp()
-            .setFooter({ text: "Pinged at" })
-            .addFields(
-                {
-                    name: "Websocket",
-                    value: `${wsEmoji} \`${ws}ms\``,
-                },
-                {
-                    name: "API Latency",
-                    value: `${msgEmoji} \`${msgEdit}ms\``,
-                },
-                {
-                    name: `${client.user.username} Uptime`,
-                    value: `:clock10: \`${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds\``,
-                }
-            );
-        await pinging.edit({ embeds: [embed], content: "Pong!" });
+
+        // Measure database ping
+        const dbStart = Date.now();
+        try {
+            await UserDatabase.findOne({}); // Simple query to measure database latency
+            const dbPing = Date.now() - dbStart;
+            const dbEmoji =
+                dbPing <= 100 ? circles.good : dbPing <= 200 ? circles.okay : circles.bad;
+
+            const embed = new EmbedBuilder()
+                .setThumbnail(client.user.displayAvatarURL())
+                .setColor("Blurple")
+                .setTimestamp()
+                .setFooter({ text: "Pinged at" })
+                .addFields(
+                    {
+                        name: "Websocket",
+                        value: `${wsEmoji} \`${ws}ms\``,
+                    },
+                    {
+                        name: "API Latency",
+                        value: `${msgEmoji} \`${msgEdit}ms\``,
+                    },
+                    {
+                        name: "Database Latency",
+                        value: `${dbEmoji} \`${dbPing}ms\``,
+                    },
+                    {
+                        name: `${client.user.username} Uptime`,
+                        value: `:clock10: \`${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds\``,
+                    }
+                );
+            await pinging.edit({ embeds: [embed], content: "Pong!" });
+        } catch (error) {
+            console.error("Database ping error:", error);
+            await pinging.edit({ content: "Error pinging the database." });
+        }
         return;
     },
 };

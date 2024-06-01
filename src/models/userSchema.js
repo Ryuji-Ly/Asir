@@ -6,6 +6,7 @@ const profileSchema = new mongoose.Schema({
         default: { userId: String, guildId: String },
         require: true,
         unique: true,
+        index: true,
     },
     economy: {
         type: Object,
@@ -14,6 +15,7 @@ const profileSchema = new mongoose.Schema({
             bank: 0,
             items: [],
         },
+        index: true,
     },
     level: {
         type: Object,
@@ -21,10 +23,12 @@ const profileSchema = new mongoose.Schema({
             level: 1,
             xp: 0,
         },
+        index: true,
     },
     cooldowns: {
         type: Array,
         default: [],
+        index: true,
     },
     data: {
         type: Object,
@@ -48,6 +52,7 @@ const profileSchema = new mongoose.Schema({
                 totalMessages: [],
             },
         },
+        index: true,
     },
     multiplier: {
         type: Number,

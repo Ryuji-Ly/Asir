@@ -7,7 +7,7 @@ const retryUpdate = async (Model, condition, updateQuery, maxRetries = 3) => {
         if (failedDocuments.length > 0) {
             console.log(`${failedDocuments.length} documents failed to update. Retrying...`);
             for (const doc of failedDocuments) {
-                await Model.updateOne({ _id: doc._id }, { $set: updateQuery });
+                await Model.findOneAndUpdate({ _id: doc._id }, { $set: updateQuery });
             }
             retries++;
         } else {
