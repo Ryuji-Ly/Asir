@@ -40,6 +40,7 @@ module.exports = {
                     ephemeral: true,
                 });
             }
+            await interaction.deferReply();
             await UserDatabase.findOneAndUpdate(
                 { key: { userId: user.id, guildId: guild.id } },
                 {
@@ -58,8 +59,9 @@ module.exports = {
                     `Successfully deposited ${formatted} ${config.economy.currency} ${config.economy.currencySymbol} into your bank`
                 )
                 .setTimestamp();
-            interaction.reply({ embeds: [embed] });
+            interaction.editReply({ embeds: [embed] });
         } else {
+            await interaction.deferReply();
             const userData = await UserDatabase.findOne({
                 key: { userId: user.id, guildId: guild.id },
             });
@@ -84,7 +86,7 @@ module.exports = {
                     `Successfully deposited ${formatted} ${config.economy.currency} ${config.economy.currencySymbol} into your bank`
                 )
                 .setTimestamp();
-            interaction.reply({ embeds: [embed] });
+            interaction.editReply({ embeds: [embed] });
         }
         return;
     },

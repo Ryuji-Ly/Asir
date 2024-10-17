@@ -151,14 +151,62 @@ setInterval(async () => {
     try {
         const updateQuery = {};
         const now = new Date();
+        let averageDailyMessages = 0;
+        let averageWeeklyMessages = 0;
+        let averageMonthlyMessages = 0;
+        let averageYearlyMessages = 0;
+        let shouldUpdate = false;
         if (now.getHours() >= 0 && now.getHours() < 1) {
+            const totalUsersDaily = await UserDatabase.countDocuments({
+                "data.timeBasedStats.dailyMessages": { $gt: 0 },
+            });
+            const totalDailyMessages = await UserDatabase.aggregate([
+                { $match: { "data.timeBasedStats.dailyMessages": { $gt: 0 } } },
+                {
+                    $group: {
+                        _id: null,
+                        totalMessages: { $sum: "$data.timeBasedStats.dailyMessages" },
+                    },
+                },
+            ]);
+            averageDailyMessages = totalDailyMessages[0]?.totalMessages / totalUsersDaily || 0;
             updateQuery["data.timeBasedStats.dailyMessages"] = 0;
+            shouldUpdate = true;
         }
         if (now.getDay() === 1 && now.getHours() >= 0 && now.getHours() < 1) {
+            const totalUsersWeekly = await UserDatabase.countDocuments({
+                "data.timeBasedStats.weeklyMessages": { $gt: 0 },
+            });
+            const totalWeeklyMessages = await UserDatabase.aggregate([
+                { $match: { "data.timeBasedStats.weeklyMessages": { $gt: 0 } } },
+                {
+                    $group: {
+                        _id: null,
+                        totalMessages: { $sum: "$data.timeBasedStats.weeklyMessages" },
+                    },
+                },
+            ]);
+            averageWeeklyMessages = totalWeeklyMessages[0]?.totalMessages / totalUsersWeekly || 0;
             updateQuery["data.timeBasedStats.weeklyMessages"] = 0;
+            shouldUpdate = true;
         }
         if (now.getDate() === 1 && now.getHours() >= 0 && now.getHours() < 1) {
+            const totalUsersMonthly = await UserDatabase.countDocuments({
+                "data.timeBasedStats.monthlyMessages": { $gt: 0 },
+            });
+            const totalMonthlyMessages = await UserDatabase.aggregate([
+                { $match: { "data.timeBasedStats.monthlyMessages": { $gt: 0 } } },
+                {
+                    $group: {
+                        _id: null,
+                        totalMessages: { $sum: "$data.timeBasedStats.monthlyMessages" },
+                    },
+                },
+            ]);
+            averageMonthlyMessages =
+                totalMonthlyMessages[0]?.totalMessages / totalUsersMonthly || 0;
             updateQuery["data.timeBasedStats.monthlyMessages"] = 0;
+            shouldUpdate = true;
         }
         if (
             now.getMonth() === 0 &&
@@ -166,20 +214,53 @@ setInterval(async () => {
             now.getHours() >= 0 &&
             now.getHours() < 1
         ) {
+            const totalUsersYearly = await UserDatabase.countDocuments({
+                "data.timeBasedStats.yearlyMessages": { $gt: 0 },
+            });
+            const totalYearlyMessages = await UserDatabase.aggregate([
+                { $match: { "data.timeBasedStats.yearlyMessages": { $gt: 0 } } },
+                {
+                    $group: {
+                        _id: null,
+                        totalMessages: { $sum: "$data.timeBasedStats.yearlyMessages" },
+                    },
+                },
+            ]);
+            averageYearlyMessages = totalYearlyMessages[0]?.totalMessages / totalUsersYearly || 0;
             updateQuery["data.timeBasedStats.yearlyMessages"] = 0;
+            shouldUpdate = true;
         }
-        try {
-            if (Object.keys(updateQuery).length === 0) return;
+        if (shouldUpdate) {
             const result = await UserDatabase.updateMany({}, { $set: updateQuery });
-            console.log(`${result.modifiedCount} documents updated.`);
+
+            let messageDescription = `\`\`\`ansi\n[0;32m[BOT] Time based stats updated successfully.\n${result.modifiedCount} user data updated.`;
+            if (averageDailyMessages) {
+                messageDescription += `\nAverage daily messages per active user: ${averageDailyMessages.toFixed(
+                    2
+                )}`;
+            }
+            if (averageWeeklyMessages) {
+                messageDescription += `\nAverage weekly messages per active user: ${averageWeeklyMessages.toFixed(
+                    2
+                )}`;
+            }
+            if (averageMonthlyMessages) {
+                messageDescription += `\nAverage monthly messages per active user: ${averageMonthlyMessages.toFixed(
+                    2
+                )}`;
+            }
+            if (averageYearlyMessages) {
+                messageDescription += `\nAverage yearly messages per active user: ${averageYearlyMessages.toFixed(
+                    2
+                )}`;
+            }
+            messageDescription += `\`\`\``;
             webhookClient.send({
                 embeds: [
                     new EmbedBuilder()
                         .setColor("Green")
                         .setAuthor({ name: `[BOT]` })
-                        .setDescription(
-                            `\`\`\`ansi\n[0;32m[BOT] Time based stats updated successfully.\n${result.modifiedCount} user data updated. (Depending on the date, this number can mean daily active users, weekly active users, monthly active users or yearly active users)\`\`\``
-                        ),
+                        .setDescription(messageDescription),
                 ],
             });
             const condition = { "data.timeBasedStats.dailyMessages": { $ne: 0 } };
@@ -189,10 +270,8 @@ setInterval(async () => {
             } else {
                 console.log("Some documents could not be updated after retries.");
             }
-        } catch (error) {
-            console.error("Error updating documents:", error);
         }
     } catch (error) {
         console.error("Error updating time based stats:", error);
     }
-}, 1000 * 60 * 60);
+}, 1000 * 60 * 60); // Run every hour to check if it's time to update

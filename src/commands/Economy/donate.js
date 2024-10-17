@@ -15,6 +15,7 @@ module.exports = {
             option
                 .setName("amount")
                 .setDescription("The amount you want to donate")
+                .setMinValue(1)
                 .setRequired(true)
         )
         .addUserOption((option) =>
@@ -40,6 +41,9 @@ module.exports = {
         }
         if (userOption.id === user.id) {
             return interaction.reply({ content: "You can't donate to yourself!", ephemeral: true });
+        }
+        if (userOption.bot) {
+            return interaction.reply({ content: "You can't donate to a bot!", ephemeral: true });
         }
         const userData = await UserDatabase.findOne({
             "key.userId": user.id,
@@ -67,11 +71,9 @@ module.exports = {
                 },
             }
         );
-        const embed = new EmbedBuilder()
-            .setColor("Green")
-            .setAuthor({
-                name: `${user.tag} donated ${amount} ${config.economy.currency} ${config.economy.currencySymbol} to ${userOption.tag}`,
-            });
+        const embed = new EmbedBuilder().setColor("Green").setAuthor({
+            name: `${user.tag} donated ${amount} ${config.economy.currency} ${config.economy.currencySymbol} to ${userOption.tag}`,
+        });
         interaction.reply({ embeds: [embed] });
     },
 };

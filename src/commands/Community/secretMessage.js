@@ -8,7 +8,6 @@ const {
     ActionRowBuilder,
     Client,
 } = require("discord.js");
-const handleCooldowns = require("../../utils/handleCooldowns");
 
 module.exports = {
     data: new SlashCommandBuilder()

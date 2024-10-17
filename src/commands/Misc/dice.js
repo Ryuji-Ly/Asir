@@ -42,8 +42,18 @@ module.exports = {
                 let desc = `:game_die: You have rolled a ${num}! :game_die:`;
                 if (nums.includes(num)) desc = `:game_die: You have rolled an ${num}! :game_die:`;
                 embed.setDescription(desc);
-                if (hidden === true) m.interaction.followUp({ embeds: [embed], ephemeral: true });
-                else m.edit({ embeds: [embed] });
+                if (hidden === true) {
+                    m.interaction.followUp({ embeds: [embed], ephemeral: true });
+                    m.edit({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor("Blurple")
+                                .setTitle(`${user.username} has rolled a d${face}!`)
+                                .setDescription(`:game_die: The results are hidden. :game_die:`)
+                                .setFooter({ text: "The results are hidden." }),
+                        ],
+                    });
+                } else m.edit({ embeds: [embed] });
             }, 1000);
         });
         return;

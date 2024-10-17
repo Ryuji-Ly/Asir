@@ -19,6 +19,7 @@ module.exports = {
      */
     async execute(interaction, client, config) {
         const { options, guild, user } = interaction;
+        await interaction.deferReply();
         const data = await UserDatabase.findOne({ key: { userId: user.id, guildId: guild.id } });
         const usermultiplier = data.multiplier;
         const groupdata = await GroupModel.findOne({
@@ -51,7 +52,7 @@ module.exports = {
             .setDescription(
                 `You have claimed ${formatted} ${config.economy.currency} ${config.economy.currencySymbol}!`
             );
-        await interaction.reply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
         return;
     },
 };

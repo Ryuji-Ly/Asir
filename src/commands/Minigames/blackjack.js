@@ -66,7 +66,7 @@ const cards = {
 };
 
 class Blackjack {
-    constructor(interaction, config) {
+    constructor(interaction, config, wallet) {
         this.interaction = interaction;
         this.config = config;
         this.deck = this.generateDeck();
@@ -77,6 +77,7 @@ class Blackjack {
         this.gameOver = false;
         this.rounds = 0;
         this.doubleDowned = false;
+        this.wallet = wallet;
     }
     async updateStats() {
         const userData = await UserDatabase.findOne({
@@ -89,7 +90,7 @@ class Blackjack {
         const push = this.playerScore === this.dealerScore;
         let bet = this.interaction.options.getString("bet");
         if (bet) {
-            if (bet === "all") bet = userData.economy.wallet;
+            if (bet === "all") bet = this.wallet;
             else bet = parseInt(bet);
 
             if (push) {
@@ -489,7 +490,7 @@ class Blackjack {
                             guildId: this.interaction.guild.id,
                         },
                     });
-                    if (bet === "all") bet = userData.economy.wallet;
+                    if (bet === "all") bet = this.wallet;
                     else bet = parseInt(bet);
                     bet += this.config.economy.minigameReward;
                     const data = await UserDatabase.findOne({
@@ -680,7 +681,7 @@ class Blackjack {
         const filter = (interaction) => {
             return interaction.user.id === this.interaction.user.id;
         };
-        const collector = msg.createMessageComponentCollector({ filter, time: 1000 * 60 * 5 });
+        const collector = msg.createMessageComponentCollector({ filter, idle: 1000 * 60 * 5 });
         collector.on("collect", async (interaction) => {
             await interaction.deferUpdate().catch((e) => {});
             this.disableDoubleDown(msg);
@@ -721,6 +722,13 @@ class Blackjack {
                 await msg.edit({ embeds: [embed] });
             }
         });
+        collector.on("end", async (collected, reason) => {
+            this.disableButtons(msg);
+            if (reason === "time" || reason == "idle") {
+                this.standPlayer();
+                this.endGame(msg);
+            }
+        });
     }
     async endGame(msg) {
         this.dealerScore = this.calculateHandScore(this.dealerHand);
@@ -756,7 +764,7 @@ class Blackjack {
                 const userData = await UserDatabase.findOne({
                     key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
                 });
-                if (bet === "all") bet = userData.economy.wallet;
+                if (bet === "all") bet = this.wallet;
                 else bet = parseInt(bet);
                 if (this.doubleDowned) bet *= 2;
                 let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
@@ -810,7 +818,7 @@ class Blackjack {
                 const userData = await UserDatabase.findOne({
                     key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
                 });
-                if (bet === "all") bet = userData.economy.wallet;
+                if (bet === "all") bet = this.wallet;
                 else bet = parseInt(bet);
                 bet += this.config.economy.minigameReward;
                 if (this.doubleDowned) bet *= 2;
@@ -917,7 +925,7 @@ class Blackjack {
                 const userData = await UserDatabase.findOne({
                     key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
                 });
-                if (bet === "all") bet = userData.economy.wallet;
+                if (bet === "all") bet = this.wallet;
                 else bet = parseInt(bet);
                 bet += this.config.economy.minigameReward;
                 if (this.doubleDowned) bet *= 2;
@@ -1024,7 +1032,7 @@ class Blackjack {
                 const userData = await UserDatabase.findOne({
                     key: { userId: this.interaction.user.id, guildId: this.interaction.guild.id },
                 });
-                if (bet === "all") bet = userData.economy.wallet;
+                if (bet === "all") bet = this.wallet;
                 else bet = parseInt(bet);
                 if (this.doubleDowned) bet *= 2;
                 let stats = userData.data.minigameStats.find((x) => x.name === "blackjack");
@@ -1163,7 +1171,10 @@ module.exports = {
                     });
                 }
                 await interaction.deferReply();
-                const game = new Blackjack(interaction, config);
+                const data = await UserDatabase.findOne({
+                    key: { userId: user.id, guildId: guild.id },
+                });
+                const game = new Blackjack(interaction, config, data.economy.wallet);
                 game.startGame();
             } else {
                 const name = interaction.commandName;

@@ -23,27 +23,27 @@ const handleCooldowns = async (interaction, cooldown) => {
     if (subname !== "") value = `${interaction.commandName} ${subname}`;
     const name = `${value}`;
     try {
-        const result = await UserDatabase.findOneAndUpdate(
-            {
-                key: { userId: interaction.user.id, guildId: interaction.guild.id },
-                "data.commands.name": name,
-            },
-            {
-                $inc: { "data.commands.$.value": 1 },
-            },
-            {
-                new: true,
-                upsert: true,
-            }
-        ).catch(() => {});
-        if (!result) {
-            await UserDatabase.findOneAndUpdate(
-                { key: { userId: interaction.user.id, guildId: interaction.guild.id } },
-                {
-                    $push: { "data.commands": { name: name, value: 1 } },
-                }
-            );
-        }
+        // const result = await UserDatabase.findOneAndUpdate(
+        //     {
+        //         key: { userId: interaction.user.id, guildId: interaction.guild.id },
+        //         "data.commands.name": name,
+        //     },
+        //     {
+        //         $inc: { "data.commands.$.value": 1 },
+        //     },
+        //     {
+        //         new: true,
+        //         upsert: true,
+        //     }
+        // ).catch(() => {});
+        // if (!result) {
+        //     await UserDatabase.findOneAndUpdate(
+        //         { key: { userId: interaction.user.id, guildId: interaction.guild.id } },
+        //         {
+        //             $push: { "data.commands": { name: name, value: 1 } },
+        //         }
+        //     );
+        // }
         desc += `Updated command counter in ${Date.now() - start}ms\n`;
         let user = await UserDatabase.findOne({
             key: { userId: interaction.user.id, guildId: interaction.guild.id },
@@ -55,6 +55,7 @@ const handleCooldowns = async (interaction, cooldown) => {
         }
         if (cooldown > 0) {
             // Handle cooldowns
+            desc += `Updating cooldown in ${Date.now() - start}ms\n`;
             let cooldownData = user.cooldowns.find((c) => c.name === name);
             if (!cooldownData) {
                 cooldownData = { name: name, value: 0 };
@@ -85,20 +86,31 @@ const handleCooldowns = async (interaction, cooldown) => {
                             })
                             .catch((e) => {});
                     });
-                console.log(
-                    `Cooldown handler line 70, saving user data in ${Date.now() - start}ms`
-                );
-                await user.save();
-                console.log(
-                    `Cooldown handler line 74, update user data done in ${Date.now() - start}ms`
-                );
                 return false;
             } else {
-                cooldownData.value = Date.now();
+                const result = await UserDatabase.findOneAndUpdate(
+                    {
+                        key: { userId: interaction.user.id, guildId: interaction.guild.id },
+                        "cooldowns.name": name,
+                    },
+                    {
+                        $set: { "cooldowns.$.value": Date.now() },
+                    },
+                    {
+                        new: true,
+                        upsert: true,
+                    }
+                ).catch(() => {});
+                if (!result) {
+                    await UserDatabase.findOneAndUpdate(
+                        { key: { userId: interaction.user.id, guildId: interaction.guild.id } },
+                        {
+                            $push: { cooldowns: { name: name, value: Date.now() } },
+                        }
+                    );
+                }
             }
         }
-        desc += `Updated cooldown in ${Date.now() - start}ms\n`;
-        await user.save();
         desc += `Update user data done in ${Date.now() - start}ms`;
         if (Date.now() - start > 3000) {
             webhookClient.send({

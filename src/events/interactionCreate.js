@@ -14,6 +14,7 @@ const novelModel = require("../models/novels");
 const tagModel = require("../models/tags");
 var colors = require("colors");
 const handleCooldowns = require("../utils/handleCooldowns");
+const commandCounter = require("../utils/handleCommandCounter");
 colors.enable();
 const categories = [
     "Fantasy",
@@ -327,7 +328,10 @@ module.exports = {
         //execute all commands
         try {
             if (interaction.isChatInputCommand()) {
-                if (!interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+                if (
+                    !interaction.member.permissions.has(PermissionFlagsBits.ModerateMembers) &&
+                    !interaction.member.id === "348902272534839296"
+                ) {
                     if (config.channels.restricted.includes(interaction.channel.id))
                         return interaction.reply({
                             content: "This channel has been restricted from all commands",
@@ -409,6 +413,7 @@ module.exports = {
             //execute the command
             try {
                 await command.execute(interaction, client, config);
+                await commandCounter(interaction);
             } catch (error) {
                 if (error.code === 10062 && error instanceof DiscordAPIError) return;
                 const embed = new EmbedBuilder()

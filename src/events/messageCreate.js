@@ -431,6 +431,46 @@ module.exports = {
                 .catch((e) => console.log(`[MESSAGE CREATE] Webhook failed to send`.red));
             console.log(`[MESSAGE CREATE] Error updating levels ${error}`.red);
         }
+        try {
+            const roleCooldownId = "1165361610022457504";
+            const roleCooldownDuration = 1000 * 60 * 60;
+            if (message.author.bot) return;
+            const role = message.guild.roles.cache.get(roleCooldownId);
+            if (role && message.mentions.roles.has(role.id)) {
+                await role.setMentionable(false);
+                setTimeout(async () => {
+                    await role.setMentionable(true);
+                }, roleCooldownDuration);
+            }
+        } catch (error) {
+            console.log(`[MESSAGE CREATE] Error setting role mentionable ${error}`.red);
+            webhookClient.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor("Red")
+                        .setAuthor({ name: `[MESSAGE CREATE]` })
+                        .setDescription(
+                            `\`\`\`ansi\n[0;31m[MESSAGE CREATE] Error setting role mentionable ${error.stack}\`\`\``
+                        ),
+                ],
+            });
+        }
+        if (message.channel.id === "1161584669356212294") {
+            if (message.author.id === "348902272534839296") return;
+            try {
+                if (message.content.toLowerCase().includes("e")) {
+                    await message.delete();
+                }
+                if (/\d/.test(message.content)) {
+                    await message.delete();
+                }
+                if (/[A-Z]/.test(message.content)) {
+                    await message.delete();
+                }
+            } catch (error) {
+                return;
+            }
+        }
         // chatbot logic
         // try {
         //     const { author, channel, content, mentions } = message;
