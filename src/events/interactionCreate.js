@@ -74,6 +74,8 @@ module.exports = {
                 content: "You cannot use commands outside of servers.",
                 ephemeral: true,
             });
+        const botMember = await interaction.guild.members.fetch(client.user.id);
+        if (!botMember.permissions.has(PermissionFlagsBits.Administrator)) return;
         const config = await client.configs.get(interaction.guild.id);
         const webhookClient = new WebhookClient({ url: process.env.discordWebhook });
         // //Forever buttons

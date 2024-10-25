@@ -35,7 +35,7 @@ module.exports = {
             .setColor("Green")
             .setAuthor({ name: `[BOT]` })
             .setDescription(`\`\`\`ansi\n[0;32m[BOT] Ready! ${client.user.tag} is online!\`\`\``);
-        webhookClient.send({ embeds: [embed] });
+        // webhookClient.send({ embeds: [embed] });
         console.log(`[BOT] Ready! ${client.user.tag} is online!`.green);
     },
 };

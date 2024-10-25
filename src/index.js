@@ -74,9 +74,9 @@ const commandFolders = fs.readdirSync("./src/commands");
                         2
                     )}ms\`\`\``
                 );
-            webhookClient
-                .send({ embeds: [embed] })
-                .catch((e) => console.log(`[DATABASE] Webhook failed to send`.red));
+            // webhookClient
+            //     .send({ embeds: [embed] })
+            //     .catch((e) => console.log(`[DATABASE] Webhook failed to send`.red));
             console.log("[DATABASE] Connected to the database!".green);
         })
         .catch((err) => {
@@ -84,7 +84,7 @@ const commandFolders = fs.readdirSync("./src/commands");
                 .setColor("Red")
                 .setAuthor({ name: `[DATABASE]` })
                 .setDescription(`\`\`\`ansi\n[0;31mError connecting to database:\n${err}\`\`\``);
-            webhookClient.send({ embeds: [embed] });
+            // webhookClient.send({ embeds: [embed] });
             console.log(`[DATABASE] Error with connecting to database: ${err.stack}`.red);
         });
     await client.login(process.env.token);
